@@ -10,6 +10,7 @@
     "minecraft.ConfiguredFeatureMixin",
     "minecraft.LevelChunkMixin",
     "minecraft.LevelMixin",
+    "minecraft.OreFeatureMixin",
     "minecraft.PlacedFeatureMixin",
     "minecraft.ServerLevelMixin",
     "minecraft.WorldGenRegionMixin"
