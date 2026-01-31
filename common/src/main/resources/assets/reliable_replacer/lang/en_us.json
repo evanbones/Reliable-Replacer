@@ -1,0 +1,13 @@
+{
+  "config.reliable_replacer.title": "Reliable Replacer Config",
+  "config.reliable_replacer.category.general": "General",
+
+  "config.reliable_replacer.option.enabled.tooltip": "Bulk toggle for enabling/disabling the mod's features",
+  "config.reliable_replacer.option.enabled": "Enable Replacement",
+
+  "config.reliable_replacer.option.missing_id_map": "Missing Block ID Map",
+  "config.reliable_replacer.option.missing_id_map.tooltip": "Fix broken worlds by mapping missing IDs to valid ones. Format: old_mod:block=minecraft:stone",
+
+  "config.reliable_replacer.option.dev_mode": "Dev Mode",
+  "config.reliable_replacer.option.dev_mode.tooltip": "Enables verbose logging for chunk saving and loading. Useful for debugging."
+}
