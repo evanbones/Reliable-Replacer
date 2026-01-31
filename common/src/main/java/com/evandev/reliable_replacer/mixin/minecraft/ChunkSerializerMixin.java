@@ -47,6 +47,7 @@ public class ChunkSerializerMixin {
 
                             if (remapper.containsKey(name)) {
                                 entry.putString("Name", remapper.get(name));
+                                entry.remove("Properties");
                             }
                         }
                     }

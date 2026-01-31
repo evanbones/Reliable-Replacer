@@ -4,6 +4,7 @@ import com.evandev.reliable_replacer.config.RuleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -35,7 +36,7 @@ public class RetrogenHandler {
                         BlockState replacement = RuleManager.getReplacement(original, pos, level, true);
 
                         if (replacement != original) {
-                            level.setBlock(pos, replacement, 18);
+                            level.setBlock(pos, replacement, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
                         }
                     }
                 }

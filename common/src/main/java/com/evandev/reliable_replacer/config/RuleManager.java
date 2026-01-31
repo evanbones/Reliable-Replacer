@@ -25,23 +25,18 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class RuleManager {
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
 
-    private static final Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = new IdentityHashMap<>();
-    private static final List<ReplacementRule> ALL_RULES = new ArrayList<>();
-    private static final List<ReplacementRule> FEATURE_CANCEL_RULES = new ArrayList<>();
+    private static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
+    private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
+    private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
 
     public static void load() {
-        RULES_BY_BLOCK.clear();
-        ALL_RULES.clear();
-        FEATURE_CANCEL_RULES.clear();
+        List<ReplacementRule> loadedRules = new ArrayList<>();
 
         Path configDir = Services.PLATFORM.getConfigDirectory().resolve("reliable_replacer");
 
@@ -56,37 +51,42 @@ public class RuleManager {
         try (Stream<Path> paths = Files.walk(configDir)) {
             paths.filter(Files::isRegularFile)
                     .filter(p -> p.toString().endsWith(".json"))
-                    .forEach(RuleManager::parseFile);
+                    .forEach(p -> parseFile(p, loadedRules));
         } catch (Exception e) {
             Constants.LOG.error("Failed to load reliable replacer rules", e);
         }
 
-        for (ReplacementRule rule : ALL_RULES) {
+        List<ReplacementRule> cancelRules = new ArrayList<>();
+        Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
+
+        for (ReplacementRule rule : loadedRules) {
             rule.resolveBlocks();
 
             if (rule.cancelFeature) {
-                FEATURE_CANCEL_RULES.add(rule);
+                cancelRules.add(rule);
+            }
+
+            for (Block b : rule.getInputBlocks()) {
+                blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
             }
         }
 
-        for (ReplacementRule rule : ALL_RULES) {
-            for (Block b : rule.getInputBlocks()) {
-                RULES_BY_BLOCK.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
-            }
-        }
+        ALL_RULES = loadedRules;
+        FEATURE_CANCEL_RULES = cancelRules;
+        RULES_BY_BLOCK = blockMap;
 
         Constants.LOG.info("Loaded {} replacement rules.", ALL_RULES.size());
     }
 
-    private static void parseFile(Path path) {
+    private static void parseFile(Path path, List<ReplacementRule> list) {
         try (FileReader fileReader = new FileReader(path.toFile())) {
             JsonElement json = JsonParser.parseReader(fileReader);
             if (json.isJsonArray()) {
                 for (JsonElement e : json.getAsJsonArray()) {
-                    ALL_RULES.add(GSON.fromJson(e, ReplacementRule.class));
+                    list.add(GSON.fromJson(e, ReplacementRule.class));
                 }
             } else if (json.isJsonObject()) {
-                ALL_RULES.add(GSON.fromJson(json, ReplacementRule.class));
+                list.add(GSON.fromJson(json, ReplacementRule.class));
             }
         } catch (Exception e) {
             Constants.LOG.error("Error parsing rule file: {}", path, e);

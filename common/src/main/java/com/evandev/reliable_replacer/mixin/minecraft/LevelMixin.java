@@ -1,4 +1,3 @@
-//
 package com.evandev.reliable_replacer.mixin.minecraft;
 
 import com.evandev.reliable_replacer.config.ModConfig;
@@ -8,12 +7,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Level.class)
 public abstract class LevelMixin {
+
+    @Unique
+    private static final ThreadLocal<Boolean> reliableReplacer$isReplacing = ThreadLocal.withInitial(() -> false);
 
     @Shadow
     public abstract boolean setBlock(BlockPos pos, BlockState state, int flags);
@@ -30,10 +33,19 @@ public abstract class LevelMixin {
             return;
         }
 
+        if (reliableReplacer$isReplacing.get()) {
+            return;
+        }
+
         BlockState replacement = RuleManager.getReplacement(state, pos, level, false);
 
         if (replacement != state) {
-            cir.setReturnValue(this.setBlock(pos, replacement, flags));
+            reliableReplacer$isReplacing.set(true);
+            try {
+                cir.setReturnValue(this.setBlock(pos, replacement, flags));
+            } finally {
+                reliableReplacer$isReplacing.set(false);
+            }
         }
     }
 }

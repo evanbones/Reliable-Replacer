@@ -5,6 +5,30 @@
 <a href='https://neoforged.net/'><img alt="neoforge" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/neoforge_vector.svg"></a>
 
 A lightweight utility for replacing one block with another, both during worldgen and afterward.
+This mod allows modpack creators to effortlessly ban items or restrict their
+usage using standard JSON files, without the need for complex scripts.
+
+## What About [Block Swap](https://modrinth.com/mod/block-swap)?
+
+I'm glad you asked! I made Reliable Replacer because of some of my personal frustrations with Block Swap. Here are
+some reasons to consider switching!
+
+<details>
+<summary>Why Reliable Replacer?</summary>
+
+* Reliable Remover is Replacer updated and supports the latest versions, while as of the time of writing this, Block
+  Swap is stuck on 1.20.1.
+* Live config reloading! Run /reload and see your changes instantly take place.
+* Advanced filtering:
+    * Filter swaps by biome, dimensions, placed feature, coordinates, or structure!
+    * Toggle retrogen on or off _per rule_
+* Much more flexible configuration, supporting simple JSON configuration in user-defined folders and integrating with
+  Cloth Config.
+* Per-rule toggleable persistence:
+    * Decide if replacement blocks should inherit the properties of the old block
+* Doesn't require any external libraries.
+
+</details>
 
 ## Features
 
