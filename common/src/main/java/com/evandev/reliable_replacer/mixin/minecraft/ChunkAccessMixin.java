@@ -20,4 +20,9 @@ public class ChunkAccessMixin implements IProcessedChunk {
     public void reliableReplacer$markProcessed() {
         this.reliableReplacer$processed = true;
     }
+
+    @Override
+    public void reliableReplacer$resetProcessed() {
+        this.reliableReplacer$processed = false;
+    }
 }

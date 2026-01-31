@@ -2,8 +2,10 @@ package com.evandev.reliable_replacer.config;
 
 import com.evandev.reliable_replacer.Constants;
 import com.evandev.reliable_replacer.data.ReplacementRule;
+import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
 import com.evandev.reliable_replacer.platform.Services;
 import com.evandev.reliable_replacer.util.FeatureContext;
+import com.evandev.reliable_replacer.util.IProcessedChunk;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -14,6 +16,8 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.LevelAccessor;
@@ -43,7 +47,7 @@ public class RuleManager {
         return RULES_BY_BLOCK;
     }
 
-    public static void load() {
+    public static void load(MinecraftServer server) {
         List<ReplacementRule> loadedRules = new ArrayList<>();
 
         Path configDir = Services.PLATFORM.getConfigDirectory().resolve("reliable_replacer");
@@ -84,6 +88,19 @@ public class RuleManager {
         RULES_BY_BLOCK = blockMap;
 
         Constants.LOG.info("Loaded {} replacement rules.", ALL_RULES.size());
+
+        if (server != null) {
+            for (ServerLevel level : server.getAllLevels()) {
+                ChunkMapAccessor map = (ChunkMapAccessor) level.getChunkSource().chunkMap;
+
+                for (ChunkHolder holder : map.reliableReplacer$getChunks()) {
+                    var chunk = holder.getTickingChunk();
+                    if (chunk instanceof IProcessedChunk processed) {
+                        processed.reliableReplacer$resetProcessed();
+                    }
+                }
+            }
+        }
     }
 
     private static void parseFile(Path path, List<ReplacementRule> list) {

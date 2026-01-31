@@ -38,6 +38,23 @@ the [Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-replacer/l
 For information and examples on how to use the mod, please also refer to the
 the [wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-replacer/usage).
 
+## Quick-Start
+
+Create a file called `my_replacement.json`, or whatever else you'd like, in `config\reliable_replacer`:
+
+```json
+{
+  "inputs": [
+    "minecraft:dirt"
+  ],
+  "output": "minecraft:diamond_block",
+  "biomes": [
+    "minecraft:plains"
+  ],
+  "min_y": "64"
+}
+```
+
 ## License
 
 [![Code license (MIT)](https://img.shields.io/badge/code%20license-MIT-green.svg?style=flat-square)](https://github.com/evanbones/Reliable-Replacer/blob/1.20.1/LICENSE)
