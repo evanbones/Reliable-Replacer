@@ -35,7 +35,7 @@ public class RetrogenHandler {
                         BlockState replacement = RuleManager.getReplacement(original, pos, level, true);
 
                         if (replacement != original) {
-                            level.setBlock(pos, replacement, 20);
+                            level.setBlock(pos, replacement, 18);
                         }
                     }
                 }

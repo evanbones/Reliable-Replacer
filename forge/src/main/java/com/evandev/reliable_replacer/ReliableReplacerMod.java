@@ -2,7 +2,6 @@ package com.evandev.reliable_replacer;
 
 import com.evandev.reliable_replacer.client.ClientConfigSetup;
 import com.evandev.reliable_replacer.config.ReloadListener;
-import com.evandev.reliable_replacer.config.RuleManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -27,7 +26,7 @@ public class ReliableReplacerMod {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        RuleManager.load();
+        CommonClass.init();
     }
 
     private void addReloadListener(final AddReloadListenerEvent event) {

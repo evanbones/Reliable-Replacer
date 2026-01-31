@@ -12,7 +12,7 @@ public class ReliableReplacerMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        RuleManager.load();
+        CommonClass.init();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricReloadListener());
     }
 

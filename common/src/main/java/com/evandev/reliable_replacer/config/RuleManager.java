@@ -3,20 +3,24 @@ package com.evandev.reliable_replacer.config;
 import com.evandev.reliable_replacer.Constants;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.platform.Services;
+import com.evandev.reliable_replacer.util.FeatureContext;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.io.FileReader;
 import java.nio.file.Files;
@@ -32,17 +36,18 @@ public class RuleManager {
 
     private static final Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = new IdentityHashMap<>();
     private static final List<ReplacementRule> ALL_RULES = new ArrayList<>();
+    private static final List<ReplacementRule> FEATURE_CANCEL_RULES = new ArrayList<>();
 
     public static void load() {
         RULES_BY_BLOCK.clear();
         ALL_RULES.clear();
+        FEATURE_CANCEL_RULES.clear();
 
         Path configDir = Services.PLATFORM.getConfigDirectory().resolve("reliable_replacer");
 
         if (!Files.exists(configDir)) {
             try {
                 Files.createDirectories(configDir);
-                generateDefaultConfig(configDir);
             } catch (Exception e) {
                 Constants.LOG.error("Failed to create config directory", e);
             }
@@ -57,12 +62,16 @@ public class RuleManager {
         }
 
         for (ReplacementRule rule : ALL_RULES) {
-            for (String inputId : rule.inputs) {
-                ResourceLocation rl = ResourceLocation.tryParse(inputId);
-                if (rl != null && BuiltInRegistries.BLOCK.containsKey(rl)) {
-                    Block block = BuiltInRegistries.BLOCK.get(rl);
-                    RULES_BY_BLOCK.computeIfAbsent(block, k -> new ArrayList<>()).add(rule);
-                }
+            rule.resolveBlocks();
+
+            if (rule.cancelFeature) {
+                FEATURE_CANCEL_RULES.add(rule);
+            }
+        }
+
+        for (ReplacementRule rule : ALL_RULES) {
+            for (Block b : rule.getInputBlocks()) {
+                RULES_BY_BLOCK.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
             }
         }
 
@@ -84,29 +93,27 @@ public class RuleManager {
         }
     }
 
-    private static void generateDefaultConfig(Path configDir) {
-        String example = """
-                [
-                  {
-                    "inputs": ["minecraft:dirt", "minecraft:grass_block"],
-                    "output": "minecraft:diamond_block",
-                    "biomes": ["minecraft:plains"],
-                    "keep_states": true,
-                    "retrogen": true
-                  }
-                ]
-                """;
-        try {
-            Files.writeString(configDir.resolve("example_replacements.json.disabled"), example);
-        } catch (Exception ignored) {
+    public static boolean shouldCancelFeature(ResourceLocation featureId, LevelAccessor level) {
+        if (FEATURE_CANCEL_RULES.isEmpty()) return false;
+
+        for (ReplacementRule rule : FEATURE_CANCEL_RULES) {
+            if (rule.features.contains(featureId.toString())) {
+                return true;
+            }
+            for (String f : rule.features) {
+                if (f.endsWith(":*") && featureId.getNamespace().equals(f.split(":")[0])) {
+                    return true;
+                }
+            }
         }
+        return false;
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen) {
         if (RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
 
         List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
-        if (candidates == null || candidates.isEmpty()) {
+        if (candidates == null) {
             return original;
         }
 
@@ -114,28 +121,65 @@ public class RuleManager {
         ResourceLocation dimId = null;
 
         for (ReplacementRule rule : candidates) {
-            if (isRetrogen && !rule.retrogen) {
-                continue;
-            }
+            if (isRetrogen && !rule.retrogen) continue;
 
+            if (rule.minY != null && pos.getY() < rule.minY) continue;
+            if (rule.maxY != null && pos.getY() > rule.maxY) continue;
+
+            // Dimension Check
             if (!rule.dimensions.isEmpty()) {
-                if (dimId == null && level != null) {
-                    try {
-                        dimId = level.dimensionType().effectsLocation();
-                    } catch (Exception ignored) {
-                    }
+                if (dimId == null && level instanceof ServerLevel sl) {
+                    dimId = sl.dimension().location();
                 }
-                if (dimId == null || !rule.dimensions.contains(dimId.toString())) {
-                    continue;
-                }
+                if (dimId != null && !rule.dimensions.contains(dimId.toString())) continue;
             }
 
+            // Biome Check
             if (!rule.biomes.isEmpty()) {
-                if (biomeId == null && level != null) {
+                if (biomeId == null) {
                     Holder<Biome> biomeHolder = level.getBiome(pos);
                     biomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
                 }
-                if (biomeId == null || !rule.biomes.contains(biomeId.toString())) {
+                if (biomeId == null || !rule.biomes.contains(biomeId.toString())) continue;
+            }
+
+            // Feature Context Check
+            if (!rule.features.isEmpty()) {
+                if (isRetrogen) continue;
+
+                ResourceLocation currentFeature = FeatureContext.getCurrentFeature();
+                if (currentFeature == null) continue;
+
+                boolean match = rule.features.contains(currentFeature.toString());
+                if (!match) {
+                    for (String f : rule.features) {
+                        if (f.endsWith(":*") && currentFeature.getNamespace().equals(f.split(":")[0])) {
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+                if (!match) continue;
+            }
+
+            // Structure Check
+            if (!rule.structures.isEmpty()) {
+                if (level instanceof ServerLevel serverLevel) {
+                    boolean inStructure = false;
+                    Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+
+                    for (String structId : rule.structures) {
+                        ResourceLocation rl = ResourceLocation.tryParse(structId);
+                        if (rl != null && structRegistry.containsKey(rl)) {
+                            Structure structure = structRegistry.get(rl);
+                            if (structure != null && serverLevel.structureManager().getStructureAt(pos, structure).isValid()) {
+                                inStructure = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!inStructure) continue;
+                } else {
                     continue;
                 }
             }
@@ -148,7 +192,6 @@ public class RuleManager {
 
     private static BlockState createReplacementState(BlockState original, ReplacementRule rule) {
         BlockState newState = rule.getOutputBlock().defaultBlockState();
-
         if (rule.keepStates) {
             for (Property<?> prop : original.getProperties()) {
                 if (newState.hasProperty(prop)) {
