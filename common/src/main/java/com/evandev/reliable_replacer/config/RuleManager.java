@@ -1,4 +1,3 @@
-//
 package com.evandev.reliable_replacer.config;
 
 import com.evandev.reliable_replacer.Constants;
@@ -119,83 +118,83 @@ public class RuleManager {
             return original;
         }
 
-        ResourceLocation biomeId = null;
-        ResourceLocation dimId = null;
-
-        // Retrieve spawn position from LevelData since LevelAccessor doesn't have getSharedSpawnPos()
         LevelData levelData = level.getLevelData();
         BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+
+        RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
 
         for (ReplacementRule rule : candidates) {
             if (isRetrogen && !rule.retrogen) continue;
 
-            // Coordinate Checks
-            if (!checkRange(pos.getX(), rule.minX, rule.maxX, spawnPos.getX())) continue;
-            if (!checkRange(pos.getY(), rule.minY, rule.maxY, spawnPos.getY())) continue;
-            if (!checkRange(pos.getZ(), rule.minZ, rule.maxZ, spawnPos.getZ())) continue;
-
-            // Dimension Check
-            if (!rule.dimensions.isEmpty()) {
-                if (dimId == null && level instanceof ServerLevel sl) {
-                    dimId = sl.dimension().location();
-                }
-                if (dimId != null && !rule.dimensions.contains(dimId.toString())) continue;
-            }
-
-            // Biome Check
-            if (!rule.biomes.isEmpty()) {
-                if (biomeId == null) {
-                    Holder<Biome> biomeHolder = level.getBiome(pos);
-                    biomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
-                }
-                if (biomeId == null || !rule.biomes.contains(biomeId.toString())) continue;
-            }
-
-            // Feature Context Check
-            if (!rule.features.isEmpty()) {
-                if (isRetrogen) continue;
-
-                ResourceLocation currentFeature = FeatureContext.getCurrentFeature();
-                if (currentFeature == null) continue;
-
-                boolean match = rule.features.contains(currentFeature.toString());
-                if (!match) {
-                    for (String f : rule.features) {
-                        if (f.endsWith(":*") && currentFeature.getNamespace().equals(f.split(":")[0])) {
-                            match = true;
-                            break;
-                        }
-                    }
-                }
-                if (!match) continue;
-            }
-
-            // Structure Check
-            if (!rule.structures.isEmpty()) {
-                if (level instanceof ServerLevel serverLevel) {
-                    boolean inStructure = false;
-                    Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
-
-                    for (String structId : rule.structures) {
-                        ResourceLocation rl = ResourceLocation.tryParse(structId);
-                        if (rl != null && structRegistry.containsKey(rl)) {
-                            Structure structure = structRegistry.get(rl);
-                            if (structure != null && serverLevel.structureManager().getStructureAt(pos, structure).isValid()) {
-                                inStructure = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!inStructure) continue;
-                } else {
-                    continue;
-                }
-            }
+            if (!checkRule(rule, ctx)) continue;
+            if (rule.not != null && checkRule(rule.not, ctx)) continue;
 
             return createReplacementState(original, rule);
         }
 
         return original;
+    }
+
+    private static boolean checkRule(ReplacementRule rule, RuleContext ctx) {
+        // Coordinate Checks
+        if (!checkRange(ctx.pos.getX(), rule.minX, rule.maxX, ctx.spawnPos.getX())) return false;
+        if (!checkRange(ctx.pos.getY(), rule.minY, rule.maxY, ctx.spawnPos.getY())) return false;
+        if (!checkRange(ctx.pos.getZ(), rule.minZ, rule.maxZ, ctx.spawnPos.getZ())) return false;
+
+        // Dimension Check
+        if (!rule.dimensions.isEmpty()) {
+            ResourceLocation dimId = ctx.getDimId();
+            if (dimId != null && !rule.dimensions.contains(dimId.toString())) return false;
+        }
+
+        // Biome Check
+        if (!rule.biomes.isEmpty()) {
+            ResourceLocation biomeId = ctx.getBiomeId();
+            if (biomeId == null || !rule.biomes.contains(biomeId.toString())) return false;
+        }
+
+        // Feature Check
+        if (!rule.features.isEmpty()) {
+            if (ctx.isRetrogen) return false;
+
+            ResourceLocation currentFeature = FeatureContext.getCurrentFeature();
+            if (currentFeature == null) return false;
+
+            boolean match = rule.features.contains(currentFeature.toString());
+            if (!match) {
+                for (String f : rule.features) {
+                    if (f.endsWith(":*") && currentFeature.getNamespace().equals(f.split(":")[0])) {
+                        match = true;
+                        break;
+                    }
+                }
+            }
+            if (!match) return false;
+        }
+
+        // Structure Check
+        if (!rule.structures.isEmpty()) {
+            if (ctx.level instanceof ServerLevel serverLevel) {
+                boolean inStructure = false;
+                Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+
+                for (String structId : rule.structures) {
+                    ResourceLocation rl = ResourceLocation.tryParse(structId);
+                    if (rl != null && structRegistry.containsKey(rl)) {
+                        Structure structure = structRegistry.get(rl);
+                        if (structure != null && serverLevel.structureManager().getStructureAt(ctx.pos, structure).isValid()) {
+                            inStructure = true;
+                            break;
+                        }
+                    }
+                }
+                return inStructure;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static boolean checkRange(int pos, String minStr, String maxStr, int spawn) {
@@ -242,5 +241,43 @@ public class RuleManager {
 
     private static <T extends Comparable<T>> BlockState copyProperty(BlockState from, BlockState to, Property<T> property) {
         return to.setValue(property, from.getValue(property));
+    }
+
+    private static class RuleContext {
+        final LevelAccessor level;
+        final BlockPos pos;
+        final BlockPos spawnPos;
+        final boolean isRetrogen;
+
+        private ResourceLocation biomeId;
+        private ResourceLocation dimId;
+        private boolean computedBiome = false;
+        private boolean computedDim = false;
+
+        RuleContext(LevelAccessor level, BlockPos pos, BlockPos spawnPos, boolean isRetrogen) {
+            this.level = level;
+            this.pos = pos;
+            this.spawnPos = spawnPos;
+            this.isRetrogen = isRetrogen;
+        }
+
+        ResourceLocation getBiomeId() {
+            if (!computedBiome) {
+                Holder<Biome> biomeHolder = level.getBiome(pos);
+                biomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
+                computedBiome = true;
+            }
+            return biomeId;
+        }
+
+        ResourceLocation getDimId() {
+            if (!computedDim) {
+                if (level instanceof ServerLevel sl) {
+                    dimId = sl.dimension().location();
+                }
+                computedDim = true;
+            }
+            return dimId;
+        }
     }
 }

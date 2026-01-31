@@ -32,4 +32,21 @@ Replace Cobblestone with Mossy Cobblestone, but only inside Jungle Temples.
 
 ```
 
-TODO: `not` rule
+### Inverted Conditions (Not)
+
+You can use the `not` field to apply a rule everywhere **except** in specific conditions.
+
+This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
+
+```json
+{
+  "inputs": ["minecraft:grass_block"],
+  "output": "minecraft:podzol",
+  "not": {
+    "biomes": ["minecraft:plains"]
+  }
+}
+
+```
+
+}

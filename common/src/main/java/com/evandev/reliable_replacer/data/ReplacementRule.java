@@ -43,6 +43,9 @@ public class ReplacementRule {
     @SerializedName("cancel_feature")
     public boolean cancelFeature = false;
 
+    @SerializedName("not")
+    public ReplacementRule not;
+
     private transient Block outputBlock;
     private transient Set<Block> inputBlocks;
 
