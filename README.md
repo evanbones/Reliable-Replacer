@@ -16,7 +16,7 @@ some reasons to consider switching!
 <details>
 <summary>Why Reliable Replacer?</summary>
 
-* Reliable Remover is Replacer updated and supports the latest versions, while as of the time of writing this, Block
+* Reliable Replacer is frequently updated and supports the latest versions, while as of the time of writing this, Block
   Swap is stuck on 1.20.1.
 * Live config reloading! Run /reload and see your changes instantly take place.
 * Advanced filtering:
@@ -33,11 +33,11 @@ some reasons to consider switching!
 ## Features
 
 A full feature list is available on
-the [Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-remover/features).
+the [Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-replacer/features).
 
 For information and examples on how to use the mod, please also refer to the
-the [wiki](https://moddedmc.wiki/en/project/reliable-remover/latest/docs/reliable-replacer/usage).
+the [wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-replacer/usage).
 
 ## License
 
-[![Code license (MIT)](https://img.shields.io/badge/code%20license-MIT-green.svg?style=flat-square)](https://github.com/evanbones/Reliable-Remover/blob/1.21.1/LICENSE)
+[![Code license (MIT)](https://img.shields.io/badge/code%20license-MIT-green.svg?style=flat-square)](https://github.com/evanbones/Reliable-Replacer/blob/1.20.1/LICENSE)
