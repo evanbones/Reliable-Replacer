@@ -15,11 +15,14 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.storage.LevelData;
 
@@ -27,6 +30,7 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RuleManager {
@@ -111,28 +115,57 @@ public class RuleManager {
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen) {
-        if (RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
+        long startTime = 0;
+        boolean devMode = ModConfig.get().devMode;
+        if (devMode) {
+            startTime = System.nanoTime();
+        }
 
-        List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
-        if (candidates == null) {
+        try {
+            if (RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
+
+            List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
+            if (candidates == null) {
+                return original;
+            }
+
+            if (devMode) {
+                List<String> activeFeatures = FeatureContext.getFeatureStack()
+                        .map(ResourceLocation::toString)
+                        .collect(Collectors.toList());
+
+                Constants.LOG.info("Checking replacement for {} at {}. Active Features: {}", original, pos, activeFeatures);
+            }
+
+            LevelData levelData = level.getLevelData();
+            BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+
+            RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
+
+            for (ReplacementRule rule : candidates) {
+                if (isRetrogen && !rule.retrogen) continue;
+
+                if (!checkRule(rule, ctx)) continue;
+                if (rule.not != null && checkRule(rule.not, ctx)) continue;
+
+                BlockState replacement = createReplacementState(original, rule);
+
+                if (devMode) {
+                    Constants.LOG.info("MATCH FOUND! Replacing {} with {} based on rule: output={}", original, replacement, rule.output);
+                }
+                return replacement;
+            }
+
             return original;
+
+        } finally {
+            if (devMode) {
+                long duration = System.nanoTime() - startTime;
+                if (duration > 10000) {
+                    Constants.LOG.info("Replacement check took {} ns", duration);
+                }
+            }
         }
-
-        LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
-
-        RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
-
-        for (ReplacementRule rule : candidates) {
-            if (isRetrogen && !rule.retrogen) continue;
-
-            if (!checkRule(rule, ctx)) continue;
-            if (rule.not != null && checkRule(rule.not, ctx)) continue;
-
-            return createReplacementState(original, rule);
-        }
-
-        return original;
     }
 
     private static boolean checkRule(ReplacementRule rule, RuleContext ctx) {
@@ -157,19 +190,30 @@ public class RuleManager {
         if (!rule.features.isEmpty()) {
             if (ctx.isRetrogen) return false;
 
-            ResourceLocation currentFeature = FeatureContext.getCurrentFeature();
-            if (currentFeature == null) return false;
+            Registry<PlacedFeature> placedRegistry = ctx.level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
+            Registry<ConfiguredFeature<?, ?>> configuredRegistry = ctx.level.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
 
-            boolean match = rule.features.contains(currentFeature.toString());
-            if (!match) {
+            boolean anyMatch = FeatureContext.getFeatureStack().anyMatch(activeFeature -> {
+                String activeStr = activeFeature.toString();
+                if (rule.features.contains(activeStr)) return true;
+
                 for (String f : rule.features) {
-                    if (f.endsWith(":*") && currentFeature.getNamespace().equals(f.split(":")[0])) {
-                        match = true;
-                        break;
+                    if (f.endsWith(":*") && activeFeature.getNamespace().equals(f.split(":")[0])) {
+                        return true;
+                    }
+
+                    if (f.startsWith("#")) {
+                        ResourceLocation tagId = ResourceLocation.tryParse(f.substring(1));
+                        if (tagId != null) {
+                            if (hasTag(placedRegistry, activeFeature, tagId)) return true;
+                            if (hasTag(configuredRegistry, activeFeature, tagId)) return true;
+                        }
                     }
                 }
-            }
-            if (!match) return false;
+                return false;
+            });
+
+            if (!anyMatch) return false;
         }
 
         // Structure Check
@@ -195,6 +239,13 @@ public class RuleManager {
         }
 
         return true;
+    }
+
+    private static <T> boolean hasTag(Registry<T> registry, ResourceLocation id, ResourceLocation tagId) {
+        TagKey<T> key = TagKey.create(registry.key(), tagId);
+        return registry.getHolder(ResourceKey.create(registry.key(), id))
+                .map(holder -> holder.is(key))
+                .orElse(false);
     }
 
     private static boolean checkRange(int pos, String minStr, String maxStr, int spawn) {
