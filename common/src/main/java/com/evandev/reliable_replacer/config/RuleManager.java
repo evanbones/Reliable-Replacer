@@ -30,7 +30,6 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RuleManager {
@@ -39,6 +38,10 @@ public class RuleManager {
     private static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
     private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
     private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
+
+    public static Map<Block, List<ReplacementRule>> getRulesByBlock() {
+        return RULES_BY_BLOCK;
+    }
 
     public static void load() {
         List<ReplacementRule> loadedRules = new ArrayList<>();
@@ -115,57 +118,29 @@ public class RuleManager {
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen) {
-        long startTime = 0;
-        boolean devMode = ModConfig.get().devMode;
-        if (devMode) {
-            startTime = System.nanoTime();
-        }
 
-        try {
-            if (RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
+        if (RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
 
-            List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
-            if (candidates == null) {
-                return original;
-            }
-
-            if (devMode) {
-                List<String> activeFeatures = FeatureContext.getFeatureStack()
-                        .map(ResourceLocation::toString)
-                        .collect(Collectors.toList());
-
-                Constants.LOG.info("Checking replacement for {} at {}. Active Features: {}", original, pos, activeFeatures);
-            }
-
-            LevelData levelData = level.getLevelData();
-            BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
-
-            RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
-
-            for (ReplacementRule rule : candidates) {
-                if (isRetrogen && !rule.retrogen) continue;
-
-                if (!checkRule(rule, ctx)) continue;
-                if (rule.not != null && checkRule(rule.not, ctx)) continue;
-
-                BlockState replacement = createReplacementState(original, rule);
-
-                if (devMode) {
-                    Constants.LOG.info("MATCH FOUND! Replacing {} with {} based on rule: output={}", original, replacement, rule.output);
-                }
-                return replacement;
-            }
-
+        List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
+        if (candidates == null) {
             return original;
-
-        } finally {
-            if (devMode) {
-                long duration = System.nanoTime() - startTime;
-                if (duration > 10000) {
-                    Constants.LOG.info("Replacement check took {} ns", duration);
-                }
-            }
         }
+
+        LevelData levelData = level.getLevelData();
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+
+        RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
+
+        for (ReplacementRule rule : candidates) {
+            if (isRetrogen && !rule.retrogen) continue;
+
+            if (!checkRule(rule, ctx)) continue;
+            if (rule.not != null && checkRule(rule.not, ctx)) continue;
+
+            return createReplacementState(original, rule);
+        }
+
+        return original;
     }
 
     private static boolean checkRule(ReplacementRule rule, RuleContext ctx) {
