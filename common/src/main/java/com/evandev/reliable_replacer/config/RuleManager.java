@@ -6,6 +6,7 @@ import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
 import com.evandev.reliable_replacer.platform.Services;
 import com.evandev.reliable_replacer.util.FeatureContext;
 import com.evandev.reliable_replacer.util.IProcessedChunk;
+import com.evandev.reliable_replacer.util.RetrogenHandler;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -38,7 +39,7 @@ import java.util.stream.Stream;
 
 public class RuleManager {
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
-
+    private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new IdentityHashMap<>();
     private static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
     private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
     private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
@@ -95,8 +96,9 @@ public class RuleManager {
 
                 for (ChunkHolder holder : map.reliableReplacer$getChunks()) {
                     var chunk = holder.getTickingChunk();
-                    if (chunk instanceof IProcessedChunk processed) {
-                        processed.reliableReplacer$resetProcessed();
+                    if (chunk != null) {
+                        ((IProcessedChunk) chunk).reliableReplacer$resetProcessed();
+                        RetrogenHandler.processChunk(chunk);
                     }
                 }
             }
@@ -119,7 +121,7 @@ public class RuleManager {
     }
 
     public static boolean shouldCancelFeature(ResourceLocation featureId, LevelAccessor level) {
-        if (FEATURE_CANCEL_RULES.isEmpty()) return false;
+        if (!ModConfig.get().enabled || FEATURE_CANCEL_RULES.isEmpty()) return false;
 
         for (ReplacementRule rule : FEATURE_CANCEL_RULES) {
             if (rule.features.contains(featureId.toString())) {
@@ -136,7 +138,7 @@ public class RuleManager {
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen) {
 
-        if (RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
+        if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
 
         List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
         if (candidates == null) {
@@ -271,11 +273,22 @@ public class RuleManager {
     }
 
     private static BlockState createReplacementState(BlockState original, ReplacementRule rule) {
-        BlockState newState = rule.getOutputBlock().defaultBlockState();
+        Block outputBlock = rule.getOutputBlock();
+        BlockState newState = outputBlock.defaultBlockState();
+
         if (rule.keepStates) {
+            Map<Integer, Property<?>> targetProperties = PROPERTY_CACHE.computeIfAbsent(outputBlock, block -> {
+                Map<Integer, Property<?>> map = new HashMap<>();
+                for (Property<?> prop : block.defaultBlockState().getProperties()) {
+                    map.put(prop.generateHashCode(), prop);
+                }
+                return map;
+            });
+
             for (Property<?> prop : original.getProperties()) {
-                if (newState.hasProperty(prop)) {
-                    newState = copyProperty(original, newState, prop);
+                Property<?> targetProp = targetProperties.get(prop.generateHashCode());
+                if (targetProp != null) {
+                    newState = copyProperty(original, newState, targetProp);
                 }
             }
         }

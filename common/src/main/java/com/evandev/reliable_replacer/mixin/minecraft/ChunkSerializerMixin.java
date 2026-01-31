@@ -21,34 +21,24 @@ import java.util.Map;
 @Mixin(ChunkSerializer.class)
 public class ChunkSerializerMixin {
     @Inject(method = "read", at = @At("HEAD"))
-    private static void onReadChunk(
-            net.minecraft.server.level.ServerLevel serverLevel,
-            net.minecraft.world.entity.ai.village.poi.PoiManager poiManager,
-            net.minecraft.world.level.ChunkPos chunkPos,
-            net.minecraft.nbt.CompoundTag compoundTag,
-            CallbackInfoReturnable<net.minecraft.world.level.chunk.ProtoChunk> cir
-    ) {
+    private static void onReadChunk(ServerLevel level, PoiManager poi, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
         Map<String, String> remapper = ModConfig.get().missingIdMap;
-        if (remapper == null || remapper.isEmpty()) return;
+        if (remapper == null || remapper.isEmpty() || !tag.contains("sections", Tag.TAG_LIST)) return;
 
-        if (compoundTag.contains("sections", Tag.TAG_LIST)) {
-            ListTag sections = compoundTag.getList("sections", Tag.TAG_COMPOUND);
+        ListTag sections = tag.getList("sections", Tag.TAG_COMPOUND);
+        for (int i = 0; i < sections.size(); i++) {
+            CompoundTag section = sections.getCompound(i);
+            if (section.contains("block_states", Tag.TAG_COMPOUND)) {
+                CompoundTag blockStates = section.getCompound("block_states");
+                if (blockStates.contains("palette", Tag.TAG_LIST)) {
+                    ListTag palette = blockStates.getList("palette", Tag.TAG_COMPOUND);
 
-            for (int i = 0; i < sections.size(); i++) {
-                CompoundTag section = sections.getCompound(i);
-                if (section.contains("block_states", Tag.TAG_COMPOUND)) {
-                    CompoundTag blockStates = section.getCompound("block_states");
-                    if (blockStates.contains("palette", Tag.TAG_LIST)) {
-                        ListTag palette = blockStates.getList("palette", Tag.TAG_COMPOUND);
-
-                        for (int j = 0; j < palette.size(); j++) {
-                            CompoundTag entry = palette.getCompound(j);
-                            String name = entry.getString("Name");
-
-                            if (remapper.containsKey(name)) {
-                                entry.putString("Name", remapper.get(name));
-                                entry.remove("Properties");
-                            }
+                    for (int j = 0; j < palette.size(); j++) {
+                        CompoundTag entry = palette.getCompound(j);
+                        String name = entry.getString("Name");
+                        if (remapper.containsKey(name)) {
+                            entry.putString("Name", remapper.get(name));
+                            entry.remove("Properties");
                         }
                     }
                 }

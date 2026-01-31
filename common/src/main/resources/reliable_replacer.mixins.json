@@ -10,6 +10,7 @@
     "minecraft.ChunkSerializerMixin",
     "minecraft.LevelChunkMixin",
     "minecraft.LevelMixin",
+    "minecraft.MinecraftServerMixin",
     "minecraft.OreFeatureMixin",
     "minecraft.PlacedFeatureMixin",
     "minecraft.ServerLevelMixin",

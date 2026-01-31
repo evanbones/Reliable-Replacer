@@ -1,5 +1,6 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
+import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.config.RuleManager;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -30,6 +31,10 @@ public class OreFeatureMixin {
             double minX, double maxX, double minZ, double maxZ, double minY, double maxY,
             int originX, int originY, int originZ
     ) {
+        if (!ModConfig.get().enabled) {
+            return original.call(instance, x, y, z, state, useLocks);
+        }
+
         BlockPos pos = new BlockPos(originX + x, originY + y, originZ + z);
         BlockState replacement = RuleManager.getReplacement(state, pos, level, false);
         return original.call(instance, x, y, z, replacement, useLocks);

@@ -1,5 +1,6 @@
 package com.evandev.reliable_replacer.util;
 
+import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.config.RuleManager;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import net.minecraft.core.BlockPos;
@@ -16,7 +17,7 @@ import java.util.Map;
 public class RetrogenHandler {
 
     public static void processChunk(LevelChunk chunk) {
-        if (((IProcessedChunk) chunk).reliableReplacer$hasBeenProcessed()) {
+        if (!ModConfig.get().enabled || ((IProcessedChunk) chunk).reliableReplacer$hasBeenProcessed()) {
             return;
         }
 
@@ -28,15 +29,11 @@ public class RetrogenHandler {
             LevelChunkSection section = sections[i];
             if (section == null || section.hasOnlyAir()) continue;
 
-            boolean sectionHasTarget = false;
-            for (Block targetBlock : rules.keySet()) {
-                if (section.getStates().maybeHas(state -> state.is(targetBlock))) {
-                    sectionHasTarget = true;
-                    break;
-                }
-            }
+            boolean hasTarget = rules.keySet().stream().anyMatch(block ->
+                    section.getStates().maybeHas(state -> state.is(block))
+            );
 
-            if (!sectionHasTarget) continue;
+            if (!hasTarget) continue;
 
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
             int startX = SectionPos.sectionToBlockCoord(chunk.getPos().x);
