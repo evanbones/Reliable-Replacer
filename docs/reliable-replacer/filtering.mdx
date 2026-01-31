@@ -3,18 +3,45 @@ title: Filtering
 hide_meta: true
 ---
 
-TODO: brief blurb
+Every rule is defined by a JSON object with specific fields. If a field is omitted, that specific condition is ignored (i.e., it matches everything).
 
-### Filter Options
+### Input & Output
 
-| Field | Description | Example |
+| Field | Type | Description |
 | :--- | :--- | :--- |
+| `inputs` | List\<String\> | A list of block IDs or namespaces to replace. Supports wildcards (e.g., `modid:*`). |
+| `output` | String | The block ID to place instead. Defaults to Air if omitted. |
+| `keep_states` | Boolean | If true, tries to copy properties (facing, axis, etc.) from the old block to the new one. Default: `true`. |
 
-### Logic (`not`)
+### World Conditions
 
-You can use the `not` field to invert conditions.
-This is useful for creating exceptions (whitelists).
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `biomes` | List\<String\> | List of biome IDs where this rule applies. |
+| `dimensions` | List\<String\> | List of dimension IDs (e.g., `minecraft:overworld`). |
+| `structures` | List\<String\> | List of structure IDs. The rule only runs if the block is inside one of these structures. |
+| `features` | List\<String\> | List of placed feature IDs. The rule only runs if the block is being placed by one of these features. |
 
-```json
+### Coordinates
+Coordinate fields accept simple numbers or relative text.
+
+| Field | Description |
+| :--- | :--- |
+| `min_x`, `max_x` | Bounds on the X axis. |
+| `min_y`, `max_y` | Bounds on the Y axis. |
+| `min_z`, `max_z` | Bounds on the Z axis. |
+
+**Coordinate Syntax:**
+* `"64"`: Absolute coordinate.
+* `"spawn"`: The world spawn coordinate.
+* `"spawn+100"`: 100 blocks positive from spawn.
+* `"spawn-50"`: 50 blocks negative from spawn.
+
+### Advanced Logic
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `cancel_feature` | Boolean | If `true`, the features listed in `features` will be completely stopped from generating. |
+| `retrogen` | Boolean | If `true`, this rule runs on already generated chunks when they are loaded. Default: `true`. |
 
 ```

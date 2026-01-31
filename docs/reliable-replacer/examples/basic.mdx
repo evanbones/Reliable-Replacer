@@ -1,0 +1,40 @@
+---
+title: Basic Replacements
+hide_meta: true
+---
+
+### Simple Block Swap
+Replaces all Granite with Deepslate.
+
+```json
+{
+  "inputs": ["minecraft:granite"],
+  "output": "minecraft:deepslate"
+}
+
+```
+
+### Mod ID Wildcard
+
+Replaces **all** blocks from `examplemod` with `minecraft:stone`. This is useful if you remove a mod but want to keep the world geometry intact.
+
+```json
+{
+  "inputs": ["examplemod:*"],
+  "output": "minecraft:stone"
+}
+
+```
+
+### Biome Specific
+
+Replaces Grass Blocks with Sand, but only in the Plains biome.
+
+```json
+{
+  "inputs": ["minecraft:grass_block"],
+  "output": "minecraft:sand",
+  "biomes": ["minecraft:plains"]
+}
+
+```

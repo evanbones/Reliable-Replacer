@@ -1,0 +1,15 @@
+---
+title: Feature Replacements
+hide_meta: true
+---
+
+### Removing Features
+This rule prevents the standard Oak Tree feature from generating in Plains biomes. Note that we must target the *placed feature* ID, not the block.
+
+```json
+{
+  "features": ["minecraft:trees_plains"],
+  "cancel_feature": true
+}
+
+```

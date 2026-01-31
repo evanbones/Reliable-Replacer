@@ -3,23 +3,38 @@ title: Usage
 hide_meta: true
 ---
 
-The mod watches a specific folder in your instance for JSON files: `./config/reliable_replacer/`.
-You can place as many JSON files as you like in this folder or in subfolders.
-
-If the folder is empty when the game starts, a `example_replacements.json` file will be generated automatically to help you
-get started.
+### Configuration Location
+The mod watches the `./config/reliable_replacer/` folder in your instance.
+* You can create any number of `.json` files in this folder.
+* The mod loads all JSON files found in this directory and its subdirectories.
+* **Reloading**: You can reload changes in-game using `/reload`
 
 ### Global Configuration
-
-Global settings can be configured via the **Cloth Config** screen in-game or by editing `config/reliable_replacer.json`.
+Global settings are found in `config/reliable_replacer.json` or via the **Cloth Config** menu in-game.
 
 ### JSON Structure
+A rule file can contain a single rule object or an array of rule objects.
 
-You can define a single rule or **multiple rules** in a single JSON file. To define multiple rules, simply wrap them in
-a JSON Array `[...]`.
+**Single Rule:**
+```json
+{
+  "inputs": ["minecraft:dirt"],
+  "output": "minecraft:stone"
+}
+```
+
+**Multiple Rules:**
 
 ```json
-
-TODO: JSON format
+[
+  {
+    "inputs": ["minecraft:dirt"],
+    "output": "minecraft:stone"
+  },
+  {
+    "inputs": ["minecraft:gravel"],
+    "output": "minecraft:sand"
+  }
+]
 
 ```

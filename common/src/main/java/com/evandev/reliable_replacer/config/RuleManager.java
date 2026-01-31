@@ -1,3 +1,4 @@
+//
 package com.evandev.reliable_replacer.config;
 
 import com.evandev.reliable_replacer.Constants;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.storage.LevelData;
 
 import java.io.FileReader;
 import java.nio.file.Files;
@@ -120,11 +122,17 @@ public class RuleManager {
         ResourceLocation biomeId = null;
         ResourceLocation dimId = null;
 
+        // Retrieve spawn position from LevelData since LevelAccessor doesn't have getSharedSpawnPos()
+        LevelData levelData = level.getLevelData();
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+
         for (ReplacementRule rule : candidates) {
             if (isRetrogen && !rule.retrogen) continue;
 
-            if (rule.minY != null && pos.getY() < rule.minY) continue;
-            if (rule.maxY != null && pos.getY() > rule.maxY) continue;
+            // Coordinate Checks
+            if (!checkRange(pos.getX(), rule.minX, rule.maxX, spawnPos.getX())) continue;
+            if (!checkRange(pos.getY(), rule.minY, rule.maxY, spawnPos.getY())) continue;
+            if (!checkRange(pos.getZ(), rule.minZ, rule.maxZ, spawnPos.getZ())) continue;
 
             // Dimension Check
             if (!rule.dimensions.isEmpty()) {
@@ -188,6 +196,36 @@ public class RuleManager {
         }
 
         return original;
+    }
+
+    private static boolean checkRange(int pos, String minStr, String maxStr, int spawn) {
+        if (minStr != null) {
+            int min = parseCoordinate(minStr, spawn);
+            if (pos < min) return false;
+        }
+        if (maxStr != null) {
+            int max = parseCoordinate(maxStr, spawn);
+            return pos <= max;
+        }
+        return true;
+    }
+
+    private static int parseCoordinate(String val, int spawn) {
+        try {
+            val = val.replace(" ", "");
+            if (val.contains("spawn")) {
+                String offsetStr = val.replace("spawn", "");
+                int offset = 0;
+                if (!offsetStr.isEmpty()) {
+                    offset = Integer.parseInt(offsetStr);
+                }
+                return spawn + offset;
+            }
+            return Integer.parseInt(val);
+        } catch (NumberFormatException e) {
+            Constants.LOG.error("Invalid coordinate value in rule: {}", val);
+            return 0;
+        }
     }
 
     private static BlockState createReplacementState(BlockState original, ReplacementRule rule) {

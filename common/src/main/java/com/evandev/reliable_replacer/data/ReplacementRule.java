@@ -19,10 +19,20 @@ public class ReplacementRule {
     public Set<String> structures = new HashSet<>();
     public Set<String> features = new HashSet<>();
 
+    @SerializedName("min_x")
+    public String minX;
+    @SerializedName("max_x")
+    public String maxX;
+
     @SerializedName("min_y")
-    public Integer minY;
+    public String minY;
     @SerializedName("max_y")
-    public Integer maxY;
+    public String maxY;
+
+    @SerializedName("min_z")
+    public String minZ;
+    @SerializedName("max_z")
+    public String maxZ;
 
     @SerializedName("keep_states")
     public boolean keepStates = true;
