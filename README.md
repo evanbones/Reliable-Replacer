@@ -19,6 +19,7 @@ some reasons to consider switching!
 * Reliable Replacer is frequently updated and supports the latest versions, while as of the time of writing this, Block
   Swap is stuck on 1.20.1.
 * Live config reloading! Run `/reload` and see your changes instantly take place.
+* Reliable Replacer is fully server-side, so it's compatible with Vanilla clients! 
 * Advanced filtering:
     * Filter swaps by biome, dimensions, placed feature, coordinates, or structure!
     * Toggle retrogen on or off _per rule_.
