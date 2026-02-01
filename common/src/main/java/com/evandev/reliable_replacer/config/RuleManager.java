@@ -131,7 +131,7 @@ public class RuleManager {
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
-        if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null || original.isAir())
+        if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null)
             return original;
 
         List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());

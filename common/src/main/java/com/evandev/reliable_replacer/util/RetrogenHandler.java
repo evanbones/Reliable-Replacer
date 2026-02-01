@@ -26,7 +26,7 @@ public class RetrogenHandler {
 
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
-            if (section == null || section.hasOnlyAir()) continue;
+            if (section == null) continue;
 
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
             int startX = chunk.getPos().getMinBlockX();
