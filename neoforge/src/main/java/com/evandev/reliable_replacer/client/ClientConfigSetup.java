@@ -2,13 +2,13 @@ package com.evandev.reliable_replacer.client;
 
 import com.evandev.reliable_replacer.config.ClothConfigIntegration;
 import com.evandev.reliable_replacer.platform.Services;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.fml.ModContainer;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 public class ClientConfigSetup {
     public static void register(ModContainer container) {
         if (Services.PLATFORM.isModLoaded("cloth_config")) {
-            container.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, () -> new ConfigScreenHandler.ConfigScreenFactory((mc, parent) -> ClothConfigIntegration.createScreen(parent)));
+            container.registerExtensionPoint(IConfigScreenFactory.class, (c, parent) -> ClothConfigIntegration.createScreen(parent));
         }
     }
 }

@@ -23,7 +23,7 @@ public class ReliableReplacerMod implements ModInitializer {
     private static class FabricReloadListener extends ReloadListener implements IdentifiableResourceReloadListener {
         @Override
         public ResourceLocation getFabricId() {
-            return new ResourceLocation("reliable_replacer", "reload_listener");
+            return ResourceLocation.fromNamespaceAndPath("reliable_replacer", "reload_listener");
         }
     }
 }

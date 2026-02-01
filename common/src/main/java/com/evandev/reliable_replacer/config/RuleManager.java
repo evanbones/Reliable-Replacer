@@ -140,7 +140,7 @@ public class RuleManager {
         }
 
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
 
         RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
 
