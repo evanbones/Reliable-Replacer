@@ -23,8 +23,8 @@ public class PlacedFeatureMixin {
 
         PlacedFeature self = (PlacedFeature) (Object) this;
         var registries = context.getLevel().registryAccess();
-        ResourceLocation placedId = registries.registryOrThrow(Registries.PLACED_FEATURE).getKey(self);
 
+        ResourceLocation placedId = registries.registryOrThrow(Registries.PLACED_FEATURE).getKey(self);
         if (placedId != null) {
             if (RuleManager.shouldCancelFeature(placedId)) {
                 cir.setReturnValue(false);

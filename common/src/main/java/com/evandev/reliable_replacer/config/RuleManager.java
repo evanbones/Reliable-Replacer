@@ -72,8 +72,6 @@ public class RuleManager {
         Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
 
         for (ReplacementRule rule : loadedRules) {
-            rule.resolveBlocks();
-
             if (rule.cancelFeature) {
                 cancelRules.add(rule);
             }

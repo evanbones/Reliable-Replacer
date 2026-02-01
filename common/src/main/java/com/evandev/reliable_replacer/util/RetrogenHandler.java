@@ -19,7 +19,6 @@ public class RetrogenHandler {
         }
 
         Level level = chunk.getLevel();
-        if (level.isClientSide) return;
 
         boolean changed = false;
         LevelChunkSection[] sections = chunk.getSections();
@@ -27,15 +26,6 @@ public class RetrogenHandler {
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
             if (section == null || section.hasOnlyAir()) continue;
-
-            boolean sectionMightHaveTargets = false;
-            for (BlockState state : RuleManager.getTrackedBlocks()) {
-                if (section.maybeHas(s -> s.is(state.getBlock()))) {
-                    sectionMightHaveTargets = true;
-                    break;
-                }
-            }
-            if (!sectionMightHaveTargets) continue;
 
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
             int startX = chunk.getPos().getMinBlockX();

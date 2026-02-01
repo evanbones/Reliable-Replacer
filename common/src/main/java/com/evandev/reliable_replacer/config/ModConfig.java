@@ -44,7 +44,6 @@ public class ModConfig {
             }
         } else {
             INSTANCE = new ModConfig();
-            save();
         }
     }
 
