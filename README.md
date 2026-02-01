@@ -22,6 +22,7 @@ some reasons to consider switching!
 * Advanced filtering:
     * Filter swaps by biome, dimensions, placed feature, coordinates, or structure!
     * Toggle retrogen on or off _per rule_
+    * Toggle player placement replacing _per rule_
 * Much more flexible configuration, supporting simple JSON configuration in user-defined folders and integrating with
   Cloth Config.
 * Per-rule toggleable persistence:

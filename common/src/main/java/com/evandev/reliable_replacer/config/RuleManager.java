@@ -26,6 +26,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -35,18 +36,16 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RuleManager {
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
-    private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new IdentityHashMap<>();
+    private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     private static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
     private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
     private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
-
-    public static Map<Block, List<ReplacementRule>> getRulesByBlock() {
-        return RULES_BY_BLOCK;
-    }
 
     public static void load(MinecraftServer server) {
         List<ReplacementRule> loadedRules = new ArrayList<>();
@@ -93,11 +92,10 @@ public class RuleManager {
         if (server != null) {
             for (ServerLevel level : server.getAllLevels()) {
                 ChunkMapAccessor map = (ChunkMapAccessor) level.getChunkSource().chunkMap;
-
                 for (ChunkHolder holder : map.reliableReplacer$getChunks()) {
-                    var chunk = holder.getTickingChunk();
+                    LevelChunk chunk = holder.getTickingChunk();
                     if (chunk != null) {
-                        ((IProcessedChunk) chunk).reliableReplacer$resetProcessed();
+                        ((IProcessedChunk) chunk).reliableReplacer$setDirty(true);
                         RetrogenHandler.processChunk(chunk);
                     }
                 }
@@ -120,7 +118,11 @@ public class RuleManager {
         }
     }
 
-    public static boolean shouldCancelFeature(ResourceLocation featureId, LevelAccessor level) {
+    public static Set<BlockState> getTrackedBlocks() {
+        return RULES_BY_BLOCK.keySet().stream().map(Block::defaultBlockState).collect(Collectors.toSet());
+    }
+
+    public static boolean shouldCancelFeature(ResourceLocation featureId) {
         if (!ModConfig.get().enabled || FEATURE_CANCEL_RULES.isEmpty()) return false;
 
         for (ReplacementRule rule : FEATURE_CANCEL_RULES) {
@@ -136,9 +138,10 @@ public class RuleManager {
         return false;
     }
 
-    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen) {
+    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement) {
 
-        if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null || original.isAir()) return original;
+        if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null || original.isAir())
+            return original;
 
         List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
         if (candidates == null) {
@@ -153,8 +156,14 @@ public class RuleManager {
         for (ReplacementRule rule : candidates) {
             if (isRetrogen && !rule.retrogen) continue;
 
+            if (isLivePlacement && !rule.applyToPlayerPlacement) continue;
+
             if (!checkRule(rule, ctx)) continue;
             if (rule.not != null && checkRule(rule.not, ctx)) continue;
+
+            if (original.is(rule.getOutputBlock())) {
+                return original;
+            }
 
             return createReplacementState(original, rule);
         }
@@ -278,7 +287,7 @@ public class RuleManager {
 
         if (rule.keepStates) {
             Map<Integer, Property<?>> targetProperties = PROPERTY_CACHE.computeIfAbsent(outputBlock, block -> {
-                Map<Integer, Property<?>> map = new HashMap<>();
+                Map<Integer, Property<?>> map = new java.util.HashMap<>();
                 for (Property<?> prop : block.defaultBlockState().getProperties()) {
                     map.put(prop.generateHashCode(), prop);
                 }

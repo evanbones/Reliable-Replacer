@@ -1,5 +1,6 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
+import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.config.RuleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.WorldGenRegion;
@@ -20,7 +21,7 @@ public class WorldGenRegionMixin {
             argsOnly = true
     )
     private BlockState reliableReplacer$globalReplace(BlockState state, BlockPos pos) {
-        if (!com.evandev.reliable_replacer.config.ModConfig.get().enabled) return state;
+        if (!ModConfig.get().enabled) return state;
 
         if (reliableReplacer$isReplacing.get()) return state;
 
@@ -28,7 +29,7 @@ public class WorldGenRegionMixin {
 
         reliableReplacer$isReplacing.set(true);
         try {
-            return RuleManager.getReplacement(state, pos, region, false);
+            return RuleManager.getReplacement(state, pos, region, false, false);
         } finally {
             reliableReplacer$isReplacing.set(false);
         }

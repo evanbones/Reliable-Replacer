@@ -36,7 +36,7 @@ public class OreFeatureMixin {
         }
 
         BlockPos pos = new BlockPos(originX + x, originY + y, originZ + z);
-        BlockState replacement = RuleManager.getReplacement(state, pos, level, false);
+        BlockState replacement = RuleManager.getReplacement(state, pos, level, false, false);
         return original.call(instance, x, y, z, replacement, useLocks);
     }
 }

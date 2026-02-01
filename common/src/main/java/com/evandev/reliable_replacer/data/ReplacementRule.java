@@ -43,6 +43,9 @@ public class ReplacementRule {
     @SerializedName("cancel_feature")
     public boolean cancelFeature = false;
 
+    @SerializedName("apply_to_player_placement")
+    public boolean applyToPlayerPlacement = true;
+
     @SerializedName("not")
     public ReplacementRule not;
 

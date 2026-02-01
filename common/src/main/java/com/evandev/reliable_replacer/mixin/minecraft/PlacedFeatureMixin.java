@@ -26,7 +26,7 @@ public class PlacedFeatureMixin {
         ResourceLocation placedId = registries.registryOrThrow(Registries.PLACED_FEATURE).getKey(self);
 
         if (placedId != null) {
-            if (RuleManager.shouldCancelFeature(placedId, context.getLevel())) {
+            if (RuleManager.shouldCancelFeature(placedId)) {
                 cir.setReturnValue(false);
                 return;
             }

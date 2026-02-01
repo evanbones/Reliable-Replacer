@@ -11,6 +11,9 @@ public class ChunkAccessMixin implements IProcessedChunk {
     @Unique
     private boolean reliableReplacer$processed = false;
 
+    @Unique
+    private boolean reliableReplacer$dirty = false;
+
     @Override
     public boolean reliableReplacer$hasBeenProcessed() {
         return reliableReplacer$processed;
@@ -24,5 +27,15 @@ public class ChunkAccessMixin implements IProcessedChunk {
     @Override
     public void reliableReplacer$resetProcessed() {
         this.reliableReplacer$processed = false;
+    }
+
+    @Override
+    public boolean reliableReplacer$isDirty() {
+        return reliableReplacer$dirty;
+    }
+
+    @Override
+    public void reliableReplacer$setDirty(boolean dirty) {
+        this.reliableReplacer$dirty = dirty;
     }
 }
