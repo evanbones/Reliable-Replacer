@@ -3,7 +3,8 @@ title: Filtering
 hide_meta: true
 ---
 
-Every rule is defined by a JSON object with specific fields. If a field is omitted, that specific condition is ignored (i.e., it matches everything).
+Every rule is defined by a JSON object with specific fields.
+If a field is omitted, that specific condition is ignored (i.e., it matches everything).
 
 ### Input & Output
 
@@ -20,7 +21,7 @@ Every rule is defined by a JSON object with specific fields. If a field is omitt
 | `biomes` | List\<String\> | List of biome IDs where this rule applies. |
 | `dimensions` | List\<String\> | List of dimension IDs (e.g., `minecraft:overworld`). |
 | `structures` | List\<String\> | List of structure IDs. The rule only runs if the block is inside one of these structures. |
-| `features` | List\<String\> | List of placed feature IDs. The rule only runs if the block is being placed by one of these features. |
+| `features` | List\<String\> | List of placed feature IDs. Supports wildcards (e.g., `modid:*`) and tags (e.g., `#minecraft:ores`). The rule only runs if the block is being placed by one of these features. |
 
 ### Coordinates
 Coordinate fields accept simple numbers or relative text.
@@ -43,5 +44,5 @@ Coordinate fields accept simple numbers or relative text.
 | :--- | :--- | :--- |
 | `cancel_feature` | Boolean | If `true`, the features listed in `features` will be completely stopped from generating. |
 | `retrogen` | Boolean | If `true`, this rule runs on already generated chunks when they are loaded. Default: `true`. |
+| `apply_to_player_placement` | Boolean | If `true`, this rule applies when a player places a block. Default: `true`. |
 | `not` | Object | An object containing conditions to exclude. If the `not` conditions match, the rule is skipped. |
-

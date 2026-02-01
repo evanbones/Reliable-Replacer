@@ -1,5 +1,6 @@
 package com.evandev.reliable_replacer.data;
 
+import com.evandev.reliable_replacer.Constants;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -8,6 +9,7 @@ import net.minecraft.world.level.block.Blocks;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class ReplacementRule {
     public Set<String> inputs = new HashSet<>();
@@ -48,7 +50,12 @@ public class ReplacementRule {
 
     @SerializedName("not")
     public ReplacementRule not;
-
+    public transient Integer cachedMinX, cachedMaxX;
+    public transient Integer cachedMinY, cachedMaxY;
+    public transient Integer cachedMinZ, cachedMaxZ;
+    public transient Integer cachedMinXOffset, cachedMaxXOffset;
+    public transient Integer cachedMinYOffset, cachedMaxYOffset;
+    public transient Integer cachedMinZOffset, cachedMaxZOffset;
     private transient Block outputBlock;
     private transient Set<Block> inputBlocks;
 
@@ -86,6 +93,31 @@ public class ReplacementRule {
                     inputBlocks.add(BuiltInRegistries.BLOCK.get(rl));
                 }
             }
+        }
+
+        parseToCache(minX, v -> cachedMinX = v, v -> cachedMinXOffset = v);
+        parseToCache(maxX, v -> cachedMaxX = v, v -> cachedMaxXOffset = v);
+
+        parseToCache(minY, v -> cachedMinY = v, v -> cachedMinYOffset = v);
+        parseToCache(maxY, v -> cachedMaxY = v, v -> cachedMaxYOffset = v);
+
+        parseToCache(minZ, v -> cachedMinZ = v, v -> cachedMinZOffset = v);
+        parseToCache(maxZ, v -> cachedMaxZ = v, v -> cachedMaxZOffset = v);
+    }
+
+    private void parseToCache(String val, Consumer<Integer> absSetter, Consumer<Integer> offsetSetter) {
+        if (val == null || val.trim().isEmpty()) return;
+        try {
+            String clean = val.replace(" ", "");
+            if (clean.contains("spawn")) {
+                String offsetStr = clean.replace("spawn", "");
+                int offset = offsetStr.isEmpty() ? 0 : Integer.parseInt(offsetStr);
+                offsetSetter.accept(offset);
+            } else {
+                absSetter.accept(Integer.parseInt(clean));
+            }
+        } catch (NumberFormatException e) {
+            Constants.LOG.error("Invalid coordinate value in rule: {}", val);
         }
     }
 }

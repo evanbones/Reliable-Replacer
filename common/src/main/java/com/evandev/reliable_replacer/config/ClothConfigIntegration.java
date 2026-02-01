@@ -51,12 +51,6 @@ public class ClothConfigIntegration {
                 })
                 .build());
 
-        general.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.reliable_replacer.option.dev_mode"), config.devMode)
-                .setDefaultValue(false)
-                .setTooltip(Component.translatable("config.reliable_replacer.option.dev_mode.tooltip"))
-                .setSaveConsumer(newValue -> config.devMode = newValue)
-                .build());
-
         return builder.build();
     }
 }

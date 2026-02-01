@@ -19,9 +19,10 @@ public class RetrogenHandler {
         }
 
         Level level = chunk.getLevel();
-
         boolean changed = false;
         LevelChunkSection[] sections = chunk.getSections();
+
+        ChunkRuleCache chunkCache = new ChunkRuleCache(level, chunk.getPos());
 
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
@@ -36,8 +37,7 @@ public class RetrogenHandler {
                     for (int z = 0; z < 16; z++) {
                         BlockPos pos = new BlockPos(startX + x, bottomY + y, startZ + z);
                         BlockState original = section.getBlockState(x, y, z);
-
-                        BlockState replacement = RuleManager.getReplacement(original, pos, level, true, false);
+                        BlockState replacement = RuleManager.getReplacement(original, pos, level, true, false, chunkCache);
 
                         if (replacement != original) {
                             level.setBlock(pos, replacement, 2);

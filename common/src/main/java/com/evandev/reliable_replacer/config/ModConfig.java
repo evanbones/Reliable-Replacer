@@ -24,9 +24,6 @@ public class ModConfig {
     @SerializedName("missing_id_map")
     public Map<String, String> missingIdMap = new HashMap<>();
 
-    @SerializedName("dev_mode")
-    public boolean devMode = false;
-
     public static ModConfig get() {
         if (INSTANCE == null) {
             load();

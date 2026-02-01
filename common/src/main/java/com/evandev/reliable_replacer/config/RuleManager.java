@@ -4,6 +4,7 @@ import com.evandev.reliable_replacer.Constants;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
 import com.evandev.reliable_replacer.platform.Services;
+import com.evandev.reliable_replacer.util.ChunkRuleCache;
 import com.evandev.reliable_replacer.util.FeatureContext;
 import com.evandev.reliable_replacer.util.IProcessedChunk;
 import com.evandev.reliable_replacer.util.RetrogenHandler;
@@ -37,7 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RuleManager {
@@ -49,7 +49,6 @@ public class RuleManager {
 
     public static void load(MinecraftServer server) {
         List<ReplacementRule> loadedRules = new ArrayList<>();
-
         Path configDir = Services.PLATFORM.getConfigDirectory().resolve("reliable_replacer");
 
         if (!Files.exists(configDir)) {
@@ -72,10 +71,10 @@ public class RuleManager {
         Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
 
         for (ReplacementRule rule : loadedRules) {
+            rule.resolveBlocks();
             if (rule.cancelFeature) {
                 cancelRules.add(rule);
             }
-
             for (Block b : rule.getInputBlocks()) {
                 blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
             }
@@ -116,28 +115,22 @@ public class RuleManager {
         }
     }
 
-    public static Set<BlockState> getTrackedBlocks() {
-        return RULES_BY_BLOCK.keySet().stream().map(Block::defaultBlockState).collect(Collectors.toSet());
-    }
-
     public static boolean shouldCancelFeature(ResourceLocation featureId) {
         if (!ModConfig.get().enabled || FEATURE_CANCEL_RULES.isEmpty()) return false;
-
         for (ReplacementRule rule : FEATURE_CANCEL_RULES) {
-            if (rule.features.contains(featureId.toString())) {
-                return true;
-            }
+            if (rule.features.contains(featureId.toString())) return true;
             for (String f : rule.features) {
-                if (f.endsWith(":*") && featureId.getNamespace().equals(f.split(":")[0])) {
-                    return true;
-                }
+                if (f.endsWith(":*") && featureId.getNamespace().equals(f.split(":")[0])) return true;
             }
         }
         return false;
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement) {
+        return getReplacement(original, pos, level, isRetrogen, isLivePlacement, null);
+    }
 
+    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
         if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null || original.isAir())
             return original;
 
@@ -153,11 +146,14 @@ public class RuleManager {
 
         for (ReplacementRule rule : candidates) {
             if (isRetrogen && !rule.retrogen) continue;
-
             if (isLivePlacement && !rule.applyToPlayerPlacement) continue;
 
-            if (!checkRule(rule, ctx)) continue;
-            if (rule.not != null && checkRule(rule.not, ctx)) continue;
+            if (cache != null && !cache.isRuleValid(rule)) {
+                continue;
+            }
+
+            if (!checkRule(rule, ctx, cache == null)) continue;
+            if (rule.not != null && checkRule(rule.not, ctx, cache == null)) continue;
 
             if (original.is(rule.getOutputBlock())) {
                 return original;
@@ -169,14 +165,19 @@ public class RuleManager {
         return original;
     }
 
-    private static boolean checkRule(ReplacementRule rule, RuleContext ctx) {
-        // Coordinate Checks
-        if (!checkRange(ctx.pos.getX(), rule.minX, rule.maxX, ctx.spawnPos.getX())) return false;
-        if (!checkRange(ctx.pos.getY(), rule.minY, rule.maxY, ctx.spawnPos.getY())) return false;
-        if (!checkRange(ctx.pos.getZ(), rule.minZ, rule.maxZ, ctx.spawnPos.getZ())) return false;
+    private static boolean checkRule(ReplacementRule rule, RuleContext ctx, boolean performStructureCheck) {
+        // Coordinate Checks - optimized to use cached Absolute OR Offset values
+        if (!checkRange(ctx.pos.getX(), rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
+                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, ctx.spawnPos.getX())) return false;
+
+        if (!checkRange(ctx.pos.getY(), rule.cachedMinY, rule.cachedMinYOffset, rule.minY,
+                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, ctx.spawnPos.getY())) return false;
+
+        if (!checkRange(ctx.pos.getZ(), rule.cachedMinZ, rule.cachedMinZOffset, rule.minZ,
+                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, ctx.spawnPos.getZ())) return false;
 
         // Dimension Check
-        if (!rule.dimensions.isEmpty()) {
+        if (performStructureCheck && !rule.dimensions.isEmpty()) {
             ResourceLocation dimId = ctx.getDimId();
             if (dimId != null && !rule.dimensions.contains(dimId.toString())) return false;
         }
@@ -190,7 +191,6 @@ public class RuleManager {
         // Feature Check
         if (!rule.features.isEmpty()) {
             if (ctx.isRetrogen) return false;
-
             Registry<PlacedFeature> placedRegistry = ctx.level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
             Registry<ConfiguredFeature<?, ?>> configuredRegistry = ctx.level.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
 
@@ -199,10 +199,7 @@ public class RuleManager {
                 if (rule.features.contains(activeStr)) return true;
 
                 for (String f : rule.features) {
-                    if (f.endsWith(":*") && activeFeature.getNamespace().equals(f.split(":")[0])) {
-                        return true;
-                    }
-
+                    if (f.endsWith(":*") && activeFeature.getNamespace().equals(f.split(":")[0])) return true;
                     if (f.startsWith("#")) {
                         ResourceLocation tagId = ResourceLocation.tryParse(f.substring(1));
                         if (tagId != null) {
@@ -213,12 +210,11 @@ public class RuleManager {
                 }
                 return false;
             });
-
             if (!anyMatch) return false;
         }
 
         // Structure Check
-        if (!rule.structures.isEmpty()) {
+        if (performStructureCheck && !rule.structures.isEmpty()) {
             if (ctx.level instanceof ServerLevel serverLevel) {
                 boolean inStructure = false;
                 Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
@@ -249,12 +245,22 @@ public class RuleManager {
                 .orElse(false);
     }
 
-    private static boolean checkRange(int pos, String minStr, String maxStr, int spawn) {
-        if (minStr != null) {
+    private static boolean checkRange(int pos, Integer cachedMin, Integer cachedMinOffset, String minStr,
+                                      Integer cachedMax, Integer cachedMaxOffset, String maxStr, int spawn) {
+        if (cachedMin != null) {
+            if (pos < cachedMin) return false;
+        } else if (cachedMinOffset != null) {
+            if (pos < spawn + cachedMinOffset) return false;
+        } else if (minStr != null) {
             int min = parseCoordinate(minStr, spawn);
             if (pos < min) return false;
         }
-        if (maxStr != null) {
+
+        if (cachedMax != null) {
+            return pos <= cachedMax;
+        } else if (cachedMaxOffset != null) {
+            return pos <= spawn + cachedMaxOffset;
+        } else if (maxStr != null) {
             int max = parseCoordinate(maxStr, spawn);
             return pos <= max;
         }
