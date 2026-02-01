@@ -1,7 +1,6 @@
 {
   "id": "reliable-replacer",
   "platforms": {
-    "curseforge": "reliable-replacer",
-    "modrinth": "reliable-replacer"
+    "curseforge": "reliable-replacer"
   }
 }
