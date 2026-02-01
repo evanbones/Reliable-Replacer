@@ -18,15 +18,15 @@ some reasons to consider switching!
 
 * Reliable Replacer is frequently updated and supports the latest versions, while as of the time of writing this, Block
   Swap is stuck on 1.20.1.
-* Live config reloading! Run /reload and see your changes instantly take place.
+* Live config reloading! Run `/reload` and see your changes instantly take place.
 * Advanced filtering:
     * Filter swaps by biome, dimensions, placed feature, coordinates, or structure!
-    * Toggle retrogen on or off _per rule_
-    * Toggle player placement replacing _per rule_
+    * Toggle retrogen on or off _per rule_.
+    * Toggle player placement replacing _per rule_.
 * Much more flexible configuration, supporting simple JSON configuration in user-defined folders and integrating with
   Cloth Config.
 * Per-rule toggleable persistence:
-    * Decide if replacement blocks should inherit the properties of the old block
+    * Decide if replacement blocks should inherit the properties of the old block.
 * Doesn't require any external libraries.
 
 </details>
@@ -36,7 +36,7 @@ some reasons to consider switching!
 A full feature list is available on
 the [Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-replacer/features).
 
-For information and examples on how to use the mod, please also refer to the
+For information and examples on how to use the mod, please also refer to
 the [wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-replacer/usage).
 
 ## Quick-Start

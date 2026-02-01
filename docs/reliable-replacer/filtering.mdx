@@ -12,7 +12,7 @@ If a field is omitted, that specific condition is ignored (i.e., it matches ever
 | :--- | :--- | :--- |
 | `inputs` | List\<String\> | A list of block IDs or namespaces to replace. Supports wildcards (e.g., `modid:*`). |
 | `output` | String | The block ID to place instead. Defaults to Air if omitted. |
-| `keep_states` | Boolean | If true, tries to copy properties (facing, axis, etc.) from the old block to the new one. Default: `true`. |
+| `keep_states` | Boolean | If `true`, attempts to copy shared properties (rotation, waterlogging, etc.) to the new block. Default: `true`. See [State Retention](#state-retention) below for details. |
 
 ### World Conditions
 
@@ -46,3 +46,17 @@ Coordinate fields accept simple numbers or relative text.
 | `retrogen` | Boolean | If `true`, this rule runs on already generated chunks when they are loaded. Default: `true`. |
 | `apply_to_player_placement` | Boolean | If `true`, this rule applies when a player places a block. Default: `true`. |
 | `not` | Object | An object containing conditions to exclude. If the `not` conditions match, the rule is skipped. |
+
+### State Retention
+
+When `keep_states` is set to `true` (which is the default), the mod attempts to be smart about how it places the new block by copying the block state (properties) from the original block.
+
+**How it works:**
+The mod looks for properties that exist on **both** the original block and the replacement block.
+* **Matches:** If both blocks share a property definition (e.g., `facing`, `waterlogged`, `power`, `lit`), the value is copied over.
+* **Mismatches:** If a property exists on the original but not the replacement (or vice versa), it is simply ignored.
+
+**Examples:**
+* **Perfect Match (Stair -> Stair):** You replace `oak_stairs` with `stone_stairs`. Both blocks have `facing`, `half`, `shape`, and `waterlogged`. The new stairs will face the exact same way and connect exactly like the old ones.
+* **Partial Match (Chest -> Furnace):** You replace a `chest` with a `furnace`. Both blocks have the `facing` property. The furnace will face the same direction as the chest. However, the chest's `type` property (left/right/single) is ignored because furnaces don't have it.
+* **No Match (Log -> Furnace):** You replace an `oak_log` with a `furnace`. Logs use the `axis` property (x, y, z) for rotation. Furnaces use the `facing` property (north, south, east, west). Since these properties are different, the furnace will spawn with its default rotation.
