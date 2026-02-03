@@ -19,7 +19,7 @@ some reasons to consider switching!
 * Reliable Replacer is frequently updated and supports the latest versions, while as of the time of writing this, Block
   Swap is stuck on 1.20.1.
 * Live config reloading! Run `/reload` and see your changes instantly take place.
-* Reliable Replacer is fully server-side, so it's compatible with Vanilla clients! 
+* Reliable Replacer is fully server-side, so it's compatible with Vanilla clients!
 * Advanced filtering:
     * Filter swaps by biome, dimensions, placed feature, coordinates, or structure!
     * Toggle retrogen on or off _per rule_.
@@ -32,6 +32,31 @@ some reasons to consider switching!
 
 </details>
 
+## Migrating From Block Swap
+
+Making the switch is easy! Reliable Replacer supports a legacy format designed to work exactly like Block
+Swap's configuration.
+
+When you first launch the game with Reliable Replacer installed, a `swapper.json` file will be automatically generated
+in your `config/reliable_replacer` folder. This file uses a simple key-value pair format identical to Block Swap.
+
+To migrate, simply copy the "swapper" block from your old configuration into this file:
+
+```json
+{
+  "swapper": {
+    "oreganized:lead_door": "supplementaries:netherite_door",
+    "farmersdelight:rope": "supplementaries:rope",
+    "minecraft:dirt": "minecraft:stone",
+    ...
+  }
+}
+
+```
+
+*Note: Rules defined in `swapper.json` automatically inherit default settings (retrogen enabled, replace on player
+placement, etc.). For more advanced control, use the standard rule format.*
+
 ## Features
 
 A full feature list is available on
@@ -40,21 +65,31 @@ the [Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-replacer/l
 For information and examples on how to use the mod, please also refer to
 the [wiki](https://moddedmc.wiki/en/project/reliable-replacer/latest/docs/reliable-replacer/usage).
 
-## Quick-Start
+## Quick-Start Example
 
 Create a file called `my_replacement.json`, or whatever else you'd like, in `config\reliable_replacer`:
 
 ```json
-{
-  "inputs": [
-    "minecraft:dirt"
-  ],
-  "output": "minecraft:diamond_block",
-  "biomes": [
-    "minecraft:plains"
-  ],
-  "min_y": "64"
-}
+[
+  {
+    "inputs": [
+      "minecraft:dirt"
+    ],
+    "output": "minecraft:diamond_block",
+    "biomes": [
+      "minecraft:plains"
+    ],
+    "min_y": "-30",
+    "max_y": "64",
+    "apply_to_player_placement": "true"
+  },
+  {
+    "inputs": [
+      "minecraft:stone"
+    ],
+    "output": "minecraft:gold_ore"
+  }
+]
 ```
 
 ## License
