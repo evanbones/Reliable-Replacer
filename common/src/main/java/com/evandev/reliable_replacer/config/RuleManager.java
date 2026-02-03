@@ -36,6 +36,7 @@ import net.minecraft.world.level.storage.LevelData;
 import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -54,6 +55,8 @@ public class RuleManager {
         if (!Files.exists(configDir)) {
             try {
                 Files.createDirectories(configDir);
+                createExampleFile(configDir);
+                createSwapperFile(configDir);
             } catch (Exception e) {
                 Constants.LOG.error("Failed to create config directory", e);
             }
@@ -108,7 +111,16 @@ public class RuleManager {
                     list.add(GSON.fromJson(e, ReplacementRule.class));
                 }
             } else if (json.isJsonObject()) {
-                list.add(GSON.fromJson(json, ReplacementRule.class));
+                if (json.getAsJsonObject().has("swapper")) {
+                    json.getAsJsonObject().getAsJsonObject("swapper").entrySet().forEach(entry -> {
+                        ReplacementRule rule = new ReplacementRule();
+                        rule.inputs.add(entry.getKey());
+                        rule.output = entry.getValue().getAsString();
+                        list.add(rule);
+                    });
+                } else {
+                    list.add(GSON.fromJson(json, ReplacementRule.class));
+                }
             }
         } catch (Exception e) {
             Constants.LOG.error("Error parsing rule file: {}", path, e);
@@ -128,6 +140,77 @@ public class RuleManager {
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement) {
         return getReplacement(original, pos, level, isRetrogen, isLivePlacement, null);
+    }
+
+    private static void createExampleFile(Path dir) {
+        Path exampleFile = dir.resolve("example_rules.json.disabled");
+        String content = """
+                [
+                  {
+                    "_comment_description": "BASIC SETTINGS: What to replace and what to replace it with.",
+                    "inputs": [
+                      "minecraft:cobblestone",
+                      "minecraft:stone_bricks"
+                    ],
+                    "output": "minecraft:mossy_cobblestone",
+                
+                    "_comment_logic": "ADVANCED LOGIC: How the replacement behaves.",
+                    "keep_states": true,
+                    "retrogen": true,
+                    "apply_to_player_placement": true,
+                    "cancel_feature": false,
+                
+                    "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
+                    "biomes": [
+                      "minecraft:jungle",
+                      "minecraft:sparse_jungle"
+                    ],
+                    "dimensions": [
+                      "minecraft:overworld"
+                    ],
+                    "structures": [
+                      "minecraft:jungle_pyramid"
+                    ],
+                    "features": [],
+                
+                    "_comment_coords": "COORDINATES: Supports absolute numbers or 'spawn' relative values.",
+                    "min_y": "60",
+                    "max_y": "100",
+                    "min_x": "spawn-500",
+                    "max_x": "spawn+500",
+                    "min_z": "spawn-500",
+                    "max_z": "spawn+500",
+                
+                    "_comment_exclusion": "EXCLUSIONS: If the 'not' block matches, the rule is SKIPPED.",
+                    "not": {
+                      "biomes": ["minecraft:river"]
+                    }
+                  }
+                ]
+                """;
+
+        try {
+            Files.writeString(exampleFile, content, StandardOpenOption.CREATE);
+        } catch (Exception e) {
+            Constants.LOG.error("Failed to generate example rule file", e);
+        }
+    }
+
+    private static void createSwapperFile(Path dir) {
+        Path swapperFile = dir.resolve("swapper.json");
+        String content = """
+                {
+                  "swapper": {
+                    "examplemod:input_block": "examplemod:output_block"
+                  }
+                }
+                """;
+
+        try {
+            Files.writeString(swapperFile, content, StandardOpenOption.CREATE);
+        } catch (Exception e) {
+            Constants.LOG.error("Failed to generate swapper rule file", e);
+        }
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
@@ -166,7 +249,7 @@ public class RuleManager {
     }
 
     private static boolean checkRule(ReplacementRule rule, RuleContext ctx, boolean performStructureCheck) {
-        // Coordinate Checks - optimized to use cached Absolute OR Offset values
+        // Coordinate Checks
         if (!checkRange(ctx.pos.getX(), rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
                 rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, ctx.spawnPos.getX())) return false;
 

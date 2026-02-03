@@ -40,12 +40,12 @@ Coordinate fields accept simple numbers or relative text.
 
 ### Advanced Logic
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `cancel_feature` | Boolean | If `true`, the features listed in `features` will be completely stopped from generating. |
-| `retrogen` | Boolean | If `true`, this rule runs on already generated chunks when they are loaded. Default: `true`. |
-| `apply_to_player_placement` | Boolean | If `true`, this rule applies when a player places a block. Default: `true`. |
-| `not` | Object | An object containing conditions to exclude. If the `not` conditions match, the rule is skipped. |
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `cancel_feature` | Boolean | `false` | If `true`, the features listed in `features` will be completely stopped from generating. |
+| `retrogen` | Boolean | `true` | If `true`, this rule runs on already generated chunks when they are loaded. |
+| `apply_to_player_placement` | Boolean | `true`  | If `true`, this rule applies instantly when a player places a block. |
+| `not` | Object | `null` | An object containing conditions to exclude. If the `not` conditions match, the rule is skipped. |
 
 ### State Retention
 
