@@ -16,12 +16,10 @@ import java.util.Map;
 public class ChunkRuleCache {
     private final Map<ReplacementRule, Boolean> ruleValidity = new IdentityHashMap<>();
     private final LevelAccessor level;
-    private final ChunkPos chunkPos;
     private final BlockPos centerPos;
 
     public ChunkRuleCache(LevelAccessor level, ChunkPos chunkPos) {
         this.level = level;
-        this.chunkPos = chunkPos;
         this.centerPos = chunkPos.getMiddleBlockPosition(64);
     }
 

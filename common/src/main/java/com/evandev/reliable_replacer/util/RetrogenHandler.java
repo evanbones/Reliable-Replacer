@@ -49,7 +49,7 @@ public class RetrogenHandler {
                             if (result.keepNbt()) {
                                 BlockEntity be = chunk.getBlockEntity(pos);
                                 if (be != null) {
-                                    nbtData = be.saveWithoutMetadata(level.registryAccess());
+                                    nbtData = be.saveWithoutMetadata();
                                     chunk.removeBlockEntity(pos);
                                 }
                             }
@@ -59,7 +59,7 @@ public class RetrogenHandler {
                             if (nbtData != null) {
                                 BlockEntity newBe = chunk.getBlockEntity(pos);
                                 if (newBe != null) {
-                                    newBe.loadWithComponents(nbtData, level.registryAccess());
+                                    newBe.load(nbtData);
                                 }
                             }
 

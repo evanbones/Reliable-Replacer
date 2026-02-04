@@ -37,7 +37,7 @@ public abstract class LevelMixin {
                 if (result.keepNbt()) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
-                        nbtData = be.saveWithoutMetadata(level.registryAccess());
+                        nbtData = be.saveWithoutMetadata();
                     }
                 }
 
@@ -46,7 +46,7 @@ public abstract class LevelMixin {
                 if (success && nbtData != null) {
                     BlockEntity newBlockEntity = level.getBlockEntity(pos);
                     if (newBlockEntity != null) {
-                        newBlockEntity.loadWithComponents(nbtData, level.registryAccess());
+                        newBlockEntity.load(nbtData);
                     }
                 }
 

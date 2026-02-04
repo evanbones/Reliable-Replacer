@@ -44,17 +44,18 @@ Coordinate fields accept simple numbers or relative text.
 | :--- | :--- | :--- | :--- |
 | `cancel_feature` | Boolean | `false` | If `true`, the features listed in `features` will be completely stopped from generating. |
 | `retrogen` | Boolean | `true` | If `true`, this rule runs on already generated chunks when they are loaded. |
-| `apply_to_player_placement` | Boolean | `true`  | If `true`, this rule applies instantly when a player places a block. |
+| `player_blocks` | Boolean | `true` | If `true`, this rule applies instantly when a player places a block. |
+| `keep_nbt` | Boolean | `true` | If `true`, this rule retains block NBT when swapping (chest loot, inventories, etc). |
 | `not` | Object | `null` | An object containing conditions to exclude. If the `not` conditions match, the rule is skipped. |
 
 ### State Retention
 
-When `keep_states` is set to `true` (which is the default), the mod attempts to be smart about how it places the new block by copying the block state (properties) from the original block.
+When `keep_states` is set to `true` (default), the mod attempts to be smart about how it places the new block by copying the block state (properties) from the original block.
 
 **How it works:**
 The mod looks for properties that exist on **both** the original block and the replacement block.
-* **Matches:** If both blocks share a property definition (e.g., `facing`, `waterlogged`, `power`, `lit`), the value is copied over.
-* **Mismatches:** If a property exists on the original but not the replacement (or vice versa), it is simply ignored.
+* If both blocks share a property definition (e.g., `facing`, `waterlogged`, `power`, `lit`), the value is copied over.
+* If a property exists on the original but not the replacement (or vice versa), it is simply ignored.
 
 **Examples:**
 * **Perfect Match (Stair -> Stair):** You replace `oak_stairs` with `stone_stairs`. Both blocks have `facing`, `half`, `shape`, and `waterlogged`. The new stairs will face the exact same way and connect exactly like the old ones.
