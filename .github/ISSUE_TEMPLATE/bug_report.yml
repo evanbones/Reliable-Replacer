@@ -17,13 +17,13 @@ body:
                 2. 
                 3.
         validations:
-            required: true
+            required: false
     -   type: textarea
         attributes:
             label: Expected Result
             description: A clear and concise description of what you expected to happen
         validations:
-            required: true
+            required: false
     -   type: textarea
         attributes:
             label: Screenshots and Videos
@@ -44,6 +44,8 @@ body:
             label: Mod Version
             description: The version of the mod you were using
             options:
+                - "1.0.2"
+                - "1.0.1"
                 - "1.0.0"
         validations:
             required: true

@@ -2,10 +2,13 @@ package com.evandev.reliable_replacer.util;
 
 import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.config.RuleManager;
+import com.evandev.reliable_replacer.data.ReplacementResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -37,10 +40,29 @@ public class RetrogenHandler {
                     for (int z = 0; z < 16; z++) {
                         BlockPos pos = new BlockPos(startX + x, bottomY + y, startZ + z);
                         BlockState original = section.getBlockState(x, y, z);
-                        BlockState replacement = RuleManager.getReplacement(original, pos, level, true, false, chunkCache);
+
+                        ReplacementResult result = RuleManager.getReplacementResult(original, pos, level, true, false, chunkCache);
+                        BlockState replacement = result.state();
 
                         if (replacement != original) {
+                            CompoundTag nbtData = null;
+                            if (result.keepNbt()) {
+                                BlockEntity be = chunk.getBlockEntity(pos);
+                                if (be != null) {
+                                    nbtData = be.saveWithoutMetadata(level.registryAccess());
+                                    chunk.removeBlockEntity(pos);
+                                }
+                            }
+
                             level.setBlock(pos, replacement, 2);
+
+                            if (nbtData != null) {
+                                BlockEntity newBe = chunk.getBlockEntity(pos);
+                                if (newBe != null) {
+                                    newBe.loadWithComponents(nbtData, level.registryAccess());
+                                }
+                            }
+
                             changed = true;
                         }
                     }

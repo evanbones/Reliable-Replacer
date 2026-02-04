@@ -1,4 +1,7 @@
 ### Added
 
-- Create default example config, if none exists already.
-- Create default `swapper.json` to easily migrate from Block Swap.
+- Added support for retaining NBT data with `keep_nbt` (default true).
+
+### Changed
+
+- Rename `apply_to_player_placement` to `player_blocks`.

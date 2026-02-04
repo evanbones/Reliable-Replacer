@@ -81,7 +81,8 @@ Create a file called `my_replacement.json`, or whatever else you'd like, in `con
     ],
     "min_y": "-30",
     "max_y": "64",
-    "apply_to_player_placement": "true"
+    "player_blocks": "true",
+    "keep_nbt": "true"
   },
   {
     "inputs": [
