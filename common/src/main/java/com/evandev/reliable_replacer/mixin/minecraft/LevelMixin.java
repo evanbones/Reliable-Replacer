@@ -2,8 +2,11 @@ package com.evandev.reliable_replacer.mixin.minecraft;
 
 import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.config.RuleManager;
+import com.evandev.reliable_replacer.data.ReplacementResult;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -24,12 +27,30 @@ public abstract class LevelMixin {
         Level level = (Level) (Object) this;
         if (level.isClientSide || !ModConfig.get().enabled) return;
 
-        BlockState replacement = RuleManager.getReplacement(state, pos, level, false, true);
+        ReplacementResult result = RuleManager.getReplacementResult(state, pos, level, false, true, null);
+        BlockState replacement = result.state();
 
         if (!replacement.equals(state)) {
             reliableReplacer$isReplacing.set(true);
             try {
-                cir.setReturnValue(level.setBlock(pos, replacement, flags));
+                CompoundTag nbtData = null;
+                if (result.keepNbt()) {
+                    BlockEntity be = level.getBlockEntity(pos);
+                    if (be != null) {
+                        nbtData = be.saveWithoutMetadata(level.registryAccess());
+                    }
+                }
+
+                boolean success = level.setBlock(pos, replacement, flags);
+
+                if (success && nbtData != null) {
+                    BlockEntity newBlockEntity = level.getBlockEntity(pos);
+                    if (newBlockEntity != null) {
+                        newBlockEntity.loadWithComponents(nbtData, level.registryAccess());
+                    }
+                }
+
+                cir.setReturnValue(success);
             } finally {
                 reliableReplacer$isReplacing.set(false);
             }

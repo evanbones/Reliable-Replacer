@@ -39,14 +39,17 @@ public class ReplacementRule {
     @SerializedName("keep_states")
     public boolean keepStates = true;
 
+    @SerializedName("keep_nbt")
+    public boolean keepNbt = true;
+
     @SerializedName("retrogen")
     public boolean retrogen = true;
 
     @SerializedName("cancel_feature")
     public boolean cancelFeature = false;
 
-    @SerializedName("apply_to_player_placement")
-    public boolean applyToPlayerPlacement = true;
+    @SerializedName("player_blocks")
+    public boolean playerBlocks = true;
 
     @SerializedName("not")
     public ReplacementRule not;

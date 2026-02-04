@@ -1,6 +1,7 @@
 package com.evandev.reliable_replacer.config;
 
 import com.evandev.reliable_replacer.Constants;
+import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
 import com.evandev.reliable_replacer.platform.Services;
@@ -44,7 +45,7 @@ import java.util.stream.Stream;
 public class RuleManager {
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
-    private static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
+    public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
     private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
     private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
 
@@ -157,8 +158,9 @@ public class RuleManager {
                     "_comment_logic": "ADVANCED LOGIC: How the replacement behaves.",
                     "keep_states": true,
                     "retrogen": true,
-                    "apply_to_player_placement": true,
+                    "player_blocks": true,
                     "cancel_feature": false,
+                    "keep_nbt": true,
                 
                     "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
                     "biomes": [
@@ -173,7 +175,7 @@ public class RuleManager {
                     ],
                     "features": [],
                 
-                    "_comment_coords": "COORDINATES: Supports absolute numbers or 'spawn' relative values.",
+                    "_comment_coords": "COORDINATES: Supports absolute numbers or worldspawn relative values.",
                     "min_y": "60",
                     "max_y": "100",
                     "min_x": "spawn-500",
@@ -213,13 +215,13 @@ public class RuleManager {
         }
     }
 
-    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
+    public static ReplacementResult getReplacementResult(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
         if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null)
-            return original;
+            return new ReplacementResult(original, false);
 
         List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
         if (candidates == null) {
-            return original;
+            return new ReplacementResult(original, false);
         }
 
         LevelData levelData = level.getLevelData();
@@ -229,7 +231,7 @@ public class RuleManager {
 
         for (ReplacementRule rule : candidates) {
             if (isRetrogen && !rule.retrogen) continue;
-            if (isLivePlacement && !rule.applyToPlayerPlacement) continue;
+            if (isLivePlacement && !rule.playerBlocks) continue;
 
             if (cache != null && !cache.isRuleValid(rule)) {
                 continue;
@@ -239,13 +241,17 @@ public class RuleManager {
             if (rule.not != null && checkRule(rule.not, ctx, cache == null)) continue;
 
             if (original.is(rule.getOutputBlock())) {
-                return original;
+                return new ReplacementResult(original, false);
             }
 
-            return createReplacementState(original, rule);
+            return new ReplacementResult(createReplacementState(original, rule), rule.keepNbt);
         }
 
-        return original;
+        return new ReplacementResult(original, false);
+    }
+
+    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
+        return getReplacementResult(original, pos, level, isRetrogen, isLivePlacement, cache).state();
     }
 
     private static boolean checkRule(ReplacementRule rule, RuleContext ctx, boolean performStructureCheck) {
