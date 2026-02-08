@@ -49,7 +49,7 @@ public class ReplacementRule {
     public boolean cancelFeature = false;
 
     @SerializedName("player_blocks")
-    public boolean playerBlocks = true;
+    public Boolean playerBlocks = null;
 
     @SerializedName("not")
     public ReplacementRule not;
@@ -110,6 +110,11 @@ public class ReplacementRule {
 
     public boolean shouldRunRetrogen() {
         if (retrogen != null) return retrogen;
+        return biomes.isEmpty() && structures.isEmpty() && features.isEmpty();
+    }
+
+    public boolean shouldRunPlayerBlocks() {
+        if (playerBlocks != null) return playerBlocks;
         return biomes.isEmpty() && structures.isEmpty() && features.isEmpty();
     }
 

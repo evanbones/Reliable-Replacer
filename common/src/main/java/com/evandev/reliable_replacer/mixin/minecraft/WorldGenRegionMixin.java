@@ -31,7 +31,7 @@ public class WorldGenRegionMixin {
         if (!ModConfig.get().enabled) return;
 
         WorldGenRegion level = (WorldGenRegion) (Object) this;
-        ReplacementResult result = RuleManager.getReplacementResult(state, pos, level, false, true, null);
+        ReplacementResult result = RuleManager.getReplacementResult(state, pos, level, false, false, null);
 
         if (result != null) {
             BlockState replacement = result.state();
