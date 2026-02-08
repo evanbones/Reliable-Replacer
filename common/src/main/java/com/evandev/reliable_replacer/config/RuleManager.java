@@ -232,7 +232,7 @@ public class RuleManager {
     @Nullable
     public static ReplacementResult getReplacementResult(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
         RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen, null);
         return getReplacementResult(original, ctx, cache, isLivePlacement);
     }
@@ -321,12 +321,12 @@ public class RuleManager {
             StructureManager structureManager = null;
             RegistryAccess registryAccess = ctx.level.registryAccess();
 
-            if (ctx.level instanceof ServerLevel sl) {
-                structureManager = sl.structureManager();
-            } else if (ctx.level instanceof WorldGenRegion wgr) {
-                structureManager = wgr.getLevel().structureManager();
-            } else if (ctx.level instanceof ServerLevelAccessor sla) {
-                structureManager = sla.getLevel().structureManager();
+            switch (ctx.level) {
+                case ServerLevel sl -> structureManager = sl.structureManager();
+                case WorldGenRegion wgr -> structureManager = wgr.getLevel().structureManager();
+                case ServerLevelAccessor sla -> structureManager = sla.getLevel().structureManager();
+                default -> {
+                }
             }
 
             if (structureManager != null) {

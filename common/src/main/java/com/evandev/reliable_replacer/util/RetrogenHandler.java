@@ -32,7 +32,7 @@ public class RetrogenHandler {
         int chunkStartZ = chunk.getPos().getMinBlockZ();
 
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
 
         RuleManager.RuleContext ctx = new RuleManager.RuleContext(level, mutablePos, spawnPos, true, null);
 
@@ -78,7 +78,7 @@ public class RetrogenHandler {
         if (result.keepNbt()) {
             BlockEntity be = chunk.getBlockEntity(pos);
             if (be != null) {
-                nbtData = be.saveWithoutMetadata();
+                nbtData = be.saveCustomOnly(level.registryAccess());
                 chunk.removeBlockEntity(pos);
             }
         }
@@ -88,7 +88,7 @@ public class RetrogenHandler {
         if (nbtData != null) {
             BlockEntity newBe = chunk.getBlockEntity(pos);
             if (newBe != null) {
-                newBe.load(nbtData);
+                newBe.loadWithComponents(nbtData, level.registryAccess());
             }
         }
     }
