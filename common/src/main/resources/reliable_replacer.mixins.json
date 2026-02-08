@@ -6,16 +6,14 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "minecraft.ChunkAccessMixin",
+    "minecraft.ChunkGeneratorMixin",
     "minecraft.ChunkMapAccessor",
     "minecraft.ChunkSerializerMixin",
     "minecraft.LevelChunkMixin",
     "minecraft.LevelMixin",
     "minecraft.MinecraftServerMixin",
-    "minecraft.OreFeatureMixin",
-    "minecraft.PlacedFeatureMixin",
     "minecraft.ServerLevelMixin",
-    "minecraft.StructureTemplateMixin",
-    "minecraft.WorldGenRegionMixin"
+    "minecraft.StructureTemplateMixin"
   ],
   "client": [],
   "server": [],

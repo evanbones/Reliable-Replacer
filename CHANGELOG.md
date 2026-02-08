@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-02-07
+
+### Changed
+
+- Large worldgen performance and memory improvements.
+- Removed filtering by feature for simplicity and performance.
+    - This is a relatively niche usecase compared to structure/biome filtering, and incurred a _heavy_ memory overhead.
+      Similar results are possible using Vanilla datapacks.
+
+### Fixed
+
+- Fix y-level handling on structure filters.
+- General backend refactors/cleanups.
+
 ## [1.0.3h] - 2026-02-07
 
 ### Changed

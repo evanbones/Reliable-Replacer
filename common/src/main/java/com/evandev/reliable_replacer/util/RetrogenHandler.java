@@ -4,15 +4,13 @@ import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.config.RuleManager;
 import com.evandev.reliable_replacer.data.ReplacementResult;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.storage.LevelData;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetrogenHandler {
 
@@ -23,73 +21,33 @@ public class RetrogenHandler {
         }
 
         Level level = chunk.getLevel();
-        boolean changed = false;
-        LevelChunkSection[] sections = chunk.getSections();
-
-        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-
-        int chunkStartX = chunk.getPos().getMinBlockX();
-        int chunkStartZ = chunk.getPos().getMinBlockZ();
-
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
 
-        RuleManager.RuleContext ctx = new RuleManager.RuleContext(level, mutablePos, spawnPos, true, null);
+        ChunkRuleCache cache = new ChunkRuleCache(level, chunk.getPos());
+        RuleManager.RuleContext ctx = new RuleManager.RuleContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk);
 
-        for (int i = 0; i < sections.length; i++) {
-            LevelChunkSection section = sections[i];
-            if (section == null || section.hasOnlyAir()) continue;
+        AtomicBoolean changed = new AtomicBoolean(false);
 
-            int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
+        BlockUtil.processChunkBlocks(chunk, (pos, original) -> {
+            ctx.set(pos);
 
-            for (int y = 0; y < 16; y++) {
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        BlockState original = section.getBlockState(x, y, z);
-                        if (original.isAir()) continue;
+            ReplacementResult result = RuleManager.getReplacementResult(original, ctx, cache, false);
 
-                        mutablePos.set(chunkStartX + x, bottomY + y, chunkStartZ + z);
-
-                        ctx.set(mutablePos, null);
-                        ReplacementResult result = RuleManager.getReplacementResult(original, ctx, null, false);
-
-                        if (result != null) {
-                            BlockState replacement = result.state();
-                            if (replacement != original) {
-                                manageBlockEntity(chunk, mutablePos, result, level, replacement);
-                                changed = true;
-                            }
-                        }
-                    }
+            if (result != null) {
+                BlockState replacement = result.state();
+                if (replacement != original) {
+                    BlockUtil.swapBlockWithNbt(level, pos, result, 3);
+                    changed.set(true);
                 }
             }
-        }
+        });
 
         access.reliableReplacer$markProcessed();
         access.reliableReplacer$setDirty(false);
 
-        if (changed && level instanceof ServerLevel serverLevel) {
-            serverLevel.getChunkSource().blockChanged(chunk.getPos().getWorldPosition());
-        }
-    }
-
-    private static void manageBlockEntity(LevelChunk chunk, BlockPos pos, ReplacementResult result, Level level, BlockState replacement) {
-        CompoundTag nbtData = null;
-        if (result.keepNbt()) {
-            BlockEntity be = chunk.getBlockEntity(pos);
-            if (be != null) {
-                nbtData = be.saveCustomOnly(level.registryAccess());
-                chunk.removeBlockEntity(pos);
-            }
-        }
-
-        level.setBlock(pos, replacement, 2);
-
-        if (nbtData != null) {
-            BlockEntity newBe = chunk.getBlockEntity(pos);
-            if (newBe != null) {
-                newBe.loadWithComponents(nbtData, level.registryAccess());
-            }
+        if (changed.get() && level instanceof ServerLevel) {
+            chunk.setUnsaved(true);
         }
     }
 }

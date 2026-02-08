@@ -1,8 +1,11 @@
 ### Changed
 
-- Affecting player placed blocks is disabled by default on structure, biome, and feature filters, unless specifically
-  enabled with `"player_blocks": "true"`.
+- Large worldgen performance and memory improvements.
+- Removed filtering by feature for simplicity and performance.
+    - This is a relatively niche usecase compared to structure/biome filtering, and incurred a _heavy_ memory overhead.
+      Similar results are possible using Vanilla datapacks.
 
 ### Fixed
 
-- Fixed structure filters not working until a world reload.
+- Fix y-level handling on structure filters.
+- General backend refactors/cleanups.

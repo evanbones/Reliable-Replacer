@@ -6,7 +6,6 @@ import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
 import com.evandev.reliable_replacer.platform.Services;
 import com.evandev.reliable_replacer.util.ChunkRuleCache;
-import com.evandev.reliable_replacer.util.FeatureContext;
 import com.evandev.reliable_replacer.util.IProcessedChunk;
 import com.evandev.reliable_replacer.util.RetrogenHandler;
 import com.google.gson.Gson;
@@ -16,7 +15,6 @@ import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -24,17 +22,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
-import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.storage.LevelData;
 import org.jetbrains.annotations.Nullable;
@@ -52,8 +48,6 @@ public class RuleManager {
     private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
-    private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
-    private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
 
     public static void load(MinecraftServer server) {
         List<ReplacementRule> loadedRules = new ArrayList<>();
@@ -77,15 +71,11 @@ public class RuleManager {
             Constants.LOG.error("Failed to load reliable replacer rules", e);
         }
 
-        List<ReplacementRule> cancelRules = new ArrayList<>();
         Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
         boolean anyLiveRules = false;
 
         for (ReplacementRule rule : loadedRules) {
             rule.resolveBlocks();
-            if (rule.cancelFeature) {
-                cancelRules.add(rule);
-            }
 
             if (rule.shouldRunPlayerBlocks()) {
                 anyLiveRules = true;
@@ -96,12 +86,10 @@ public class RuleManager {
             }
         }
 
-        ALL_RULES = loadedRules;
-        FEATURE_CANCEL_RULES = cancelRules;
         RULES_BY_BLOCK = blockMap;
         HAS_LIVE_RULES = anyLiveRules;
 
-        Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}", ALL_RULES.size(), HAS_LIVE_RULES);
+        Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}", RULES_BY_BLOCK.size(), HAS_LIVE_RULES);
 
         if (server != null) {
             for (ServerLevel level : server.getAllLevels()) {
@@ -141,22 +129,6 @@ public class RuleManager {
         }
     }
 
-    public static boolean shouldCancelFeature(ResourceLocation featureId) {
-        if (!ModConfig.get().enabled || FEATURE_CANCEL_RULES.isEmpty()) return false;
-        for (ReplacementRule rule : FEATURE_CANCEL_RULES) {
-            if (rule.features.contains(featureId.toString())) return true;
-            for (String f : rule.features) {
-                if (f.endsWith(":*") && featureId.getNamespace().equals(f.split(":")[0])) return true;
-            }
-        }
-        return false;
-    }
-
-    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement) {
-        ReplacementResult result = getReplacementResult(original, pos, level, isRetrogen, isLivePlacement, null);
-        return result == null ? original : result.state();
-    }
-
     private static void createExampleFile(Path dir) {
         Path exampleFile = dir.resolve("example_rules.json.disabled");
         String content = """
@@ -173,7 +145,6 @@ public class RuleManager {
                     "keep_states": true,
                     "retrogen": true,
                     "player_blocks": true,
-                    "cancel_feature": false,
                     "keep_nbt": true,
                 
                     "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
@@ -186,8 +157,7 @@ public class RuleManager {
                     ],
                     "structures": [
                       "minecraft:jungle_pyramid"
-                    ],
-                    "features": [],
+                    ]
                 
                     "_comment_coords": "COORDINATES: Supports absolute numbers or worldspawn relative values.",
                     "min_y": "60",
@@ -232,7 +202,10 @@ public class RuleManager {
     @Nullable
     public static ReplacementResult getReplacementResult(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        if (cache == null) {
+            cache = new ChunkRuleCache(level, new ChunkPos(pos));
+        }
         RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen, null);
         return getReplacementResult(original, ctx, cache, isLivePlacement);
     }
@@ -247,7 +220,9 @@ public class RuleManager {
             return null;
         }
 
-        for (ReplacementRule rule : candidates) {
+        for (int i = 0; i < candidates.size(); i++) {
+            ReplacementRule rule = candidates.get(i);
+
             if (ctx.isRetrogen && !rule.shouldRunRetrogen()) continue;
 
             if (isLivePlacement && !rule.shouldRunPlayerBlocks()) continue;
@@ -267,96 +242,57 @@ public class RuleManager {
 
     private static boolean checkRule(ReplacementRule rule, RuleContext ctx, ChunkRuleCache cache) {
         // Coordinate Checks
-        if (!checkRange(ctx.pos.getX(), rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
-                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, ctx.spawnPos.getX())) return false;
+        int x = ctx.pos.getX();
+        int y = ctx.pos.getY();
+        int z = ctx.pos.getZ();
+        int sx = ctx.spawnPos.getX();
+        int sy = ctx.spawnPos.getY();
+        int sz = ctx.spawnPos.getZ();
 
-        if (!checkRange(ctx.pos.getY(), rule.cachedMinY, rule.cachedMinYOffset, rule.minY,
-                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, ctx.spawnPos.getY())) return false;
+        if (!checkRange(x, rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
+                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, sx)) return false;
 
-        if (!checkRange(ctx.pos.getZ(), rule.cachedMinZ, rule.cachedMinZOffset, rule.minZ,
-                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, ctx.spawnPos.getZ())) return false;
+        if (!checkRange(y, rule.cachedMinY, rule.cachedMinYOffset, rule.minY,
+                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, sy)) return false;
+
+        if (!checkRange(z, rule.cachedMinZ, rule.cachedMinZOffset, rule.minZ,
+                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, sz)) return false;
 
         // Dimension Check
-        if (!rule.dimensions.isEmpty()) {
+        if (!rule.parsedDimensions.isEmpty()) {
             ResourceLocation dimId = ctx.getDimId();
-            if (dimId != null && !rule.dimensions.contains(dimId.toString())) return false;
+            if (dimId != null && !rule.parsedDimensions.contains(dimId)) return false;
         }
 
         // Biome Check
-        if (!rule.biomes.isEmpty()) {
+        if (!rule.parsedBiomes.isEmpty()) {
             ResourceLocation biomeId = ctx.getBiomeId();
-            if (biomeId == null || !rule.biomes.contains(biomeId.toString())) return false;
-        }
-
-        // Feature Check
-        if (!rule.features.isEmpty()) {
-            Registry<PlacedFeature> placedRegistry = ctx.level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
-            Registry<ConfiguredFeature<?, ?>> configuredRegistry = ctx.level.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
-
-            boolean anyMatch = FeatureContext.getFeatureStack().anyMatch(activeFeature -> {
-                String activeStr = activeFeature.toString();
-                if (rule.features.contains(activeStr)) return true;
-
-                for (String f : rule.features) {
-                    if (f.endsWith(":*") && activeFeature.getNamespace().equals(f.split(":")[0])) return true;
-                    if (f.startsWith("#")) {
-                        ResourceLocation tagId = ResourceLocation.tryParse(f.substring(1));
-                        if (tagId != null) {
-                            if (hasTag(placedRegistry, activeFeature, tagId)) return true;
-                            if (hasTag(configuredRegistry, activeFeature, tagId)) return true;
-                        }
-                    }
-                }
-                return false;
-            });
-            if (!anyMatch) return false;
+            if (biomeId == null || !rule.parsedBiomes.contains(biomeId)) return false;
         }
 
         // Structure Check
-        if (!rule.structures.isEmpty()) {
+        if (!rule.parsedStructures.isEmpty()) {
             if (cache != null) {
                 return cache.isPositionInStructure(rule, ctx.pos);
             }
 
-            StructureManager structureManager = null;
-            RegistryAccess registryAccess = ctx.level.registryAccess();
+            if (ctx.level instanceof ServerLevel sl) {
+                StructureManager structureManager = sl.structureManager();
+                Registry<Structure> structRegistry = ctx.level.registryAccess().registryOrThrow(Registries.STRUCTURE);
 
-            switch (ctx.level) {
-                case ServerLevel sl -> structureManager = sl.structureManager();
-                case WorldGenRegion wgr -> structureManager = wgr.getLevel().structureManager();
-                case ServerLevelAccessor sla -> structureManager = sla.getLevel().structureManager();
-                default -> {
-                }
-            }
-
-            if (structureManager != null) {
-                boolean inStructure = false;
-                Registry<Structure> structRegistry = registryAccess.registryOrThrow(Registries.STRUCTURE);
-
-                for (String structId : rule.structures) {
-                    ResourceLocation rl = ResourceLocation.tryParse(structId);
-                    if (rl != null && structRegistry.containsKey(rl)) {
+                for (ResourceLocation rl : rule.parsedStructures) {
+                    if (structRegistry.containsKey(rl)) {
                         Structure structure = structRegistry.get(rl);
                         if (structure != null && structureManager.getStructureAt(ctx.pos, structure).isValid()) {
-                            inStructure = true;
-                            break;
+                            return true;
                         }
                     }
                 }
-                return inStructure;
-            } else {
-                return false;
             }
+            return false;
         }
 
         return true;
-    }
-
-    private static <T> boolean hasTag(Registry<T> registry, ResourceLocation id, ResourceLocation tagId) {
-        TagKey<T> key = TagKey.create(registry.key(), tagId);
-        return registry.getHolder(ResourceKey.create(registry.key(), id))
-                .map(holder -> holder.is(key))
-                .orElse(false);
     }
 
     private static boolean checkRange(int pos, Integer cachedMin, Integer cachedMinOffset, String minStr,
@@ -395,7 +331,7 @@ public class RuleManager {
             return Integer.parseInt(val);
         } catch (NumberFormatException e) {
             Constants.LOG.error("Invalid coordinate value in rule: {}", val);
-            return 0;
+            return Integer.MIN_VALUE;
         }
     }
 
@@ -430,36 +366,48 @@ public class RuleManager {
         public final LevelAccessor level;
         public final BlockPos spawnPos;
         public final boolean isRetrogen;
+        @Nullable
+        public final ChunkAccess chunk;
 
         public BlockPos pos;
-        public Holder<Biome> preCachedBiome;
 
         private ResourceLocation biomeId;
         private ResourceLocation dimId;
-        private boolean computedBiome = false;
         private boolean computedDim = false;
 
-        public RuleContext(LevelAccessor level, BlockPos pos, BlockPos spawnPos, boolean isRetrogen, Holder<Biome> preCachedBiome) {
+        private int lastBiomeX = Integer.MIN_VALUE;
+        private int lastBiomeY = Integer.MIN_VALUE;
+        private int lastBiomeZ = Integer.MIN_VALUE;
+
+        public RuleContext(LevelAccessor level, BlockPos pos, BlockPos spawnPos, boolean isRetrogen, @Nullable ChunkAccess chunk) {
             this.level = level;
             this.pos = pos;
             this.spawnPos = spawnPos;
             this.isRetrogen = isRetrogen;
-            this.preCachedBiome = preCachedBiome;
+            this.chunk = chunk;
         }
 
-        public void set(BlockPos pos, Holder<Biome> biome) {
+        public void set(BlockPos pos) {
             this.pos = pos;
-            this.preCachedBiome = biome;
-            this.computedBiome = false;
-            this.biomeId = null;
         }
 
         ResourceLocation getBiomeId() {
-            if (!computedBiome) {
+            int qX = pos.getX() >> 2;
+            int qY = pos.getY() >> 2;
+            int qZ = pos.getZ() >> 2;
+
+            if (biomeId == null || qX != lastBiomeX || qY != lastBiomeY || qZ != lastBiomeZ) {
                 Holder<Biome> biomeHolder;
-                biomeHolder = Objects.requireNonNullElseGet(preCachedBiome, () -> level.getBiome(pos));
+                if (chunk != null) {
+                    biomeHolder = chunk.getNoiseBiome(qX, qY, qZ);
+                } else {
+                    biomeHolder = level.getBiome(pos);
+                }
+
                 biomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
-                computedBiome = true;
+                lastBiomeX = qX;
+                lastBiomeY = qY;
+                lastBiomeZ = qZ;
             }
             return biomeId;
         }
@@ -468,6 +416,8 @@ public class RuleManager {
             if (!computedDim) {
                 if (level instanceof ServerLevel sl) {
                     dimId = sl.dimension().location();
+                } else if (level instanceof WorldGenRegion wgr) {
+                    dimId = wgr.getLevel().dimension().location();
                 }
                 computedDim = true;
             }
