@@ -22,37 +22,41 @@ public abstract class LevelMixin {
 
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z", at = @At("HEAD"), cancellable = true)
     private void onSetBlock(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<Boolean> cir) {
+        if (!RuleManager.HAS_LIVE_RULES) return;
         if (reliableReplacer$isReplacing.get()) return;
 
         Level level = (Level) (Object) this;
         if (level.isClientSide || !ModConfig.get().enabled) return;
 
         ReplacementResult result = RuleManager.getReplacementResult(state, pos, level, false, true, null);
-        BlockState replacement = result.state();
 
-        if (!replacement.equals(state)) {
-            reliableReplacer$isReplacing.set(true);
-            try {
-                CompoundTag nbtData = null;
-                if (result.keepNbt()) {
-                    BlockEntity be = level.getBlockEntity(pos);
-                    if (be != null) {
-                        nbtData = be.saveWithoutMetadata();
+        if (result != null) {
+            BlockState replacement = result.state();
+
+            if (!replacement.equals(state)) {
+                reliableReplacer$isReplacing.set(true);
+                try {
+                    CompoundTag nbtData = null;
+                    if (result.keepNbt()) {
+                        BlockEntity be = level.getBlockEntity(pos);
+                        if (be != null) {
+                            nbtData = be.saveWithoutMetadata();
+                        }
                     }
-                }
 
-                boolean success = level.setBlock(pos, replacement, flags);
+                    boolean success = level.setBlock(pos, replacement, flags);
 
-                if (success && nbtData != null) {
-                    BlockEntity newBlockEntity = level.getBlockEntity(pos);
-                    if (newBlockEntity != null) {
-                        newBlockEntity.load(nbtData);
+                    if (success && nbtData != null) {
+                        BlockEntity newBlockEntity = level.getBlockEntity(pos);
+                        if (newBlockEntity != null) {
+                            newBlockEntity.load(nbtData);
+                        }
                     }
-                }
 
-                cir.setReturnValue(success);
-            } finally {
-                reliableReplacer$isReplacing.set(false);
+                    cir.setReturnValue(success);
+                } finally {
+                    reliableReplacer$isReplacing.set(false);
+                }
             }
         }
     }

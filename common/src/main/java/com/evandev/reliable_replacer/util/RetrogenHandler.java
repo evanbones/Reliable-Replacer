@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.storage.LevelData;
 
 public class RetrogenHandler {
 
@@ -25,45 +26,39 @@ public class RetrogenHandler {
         boolean changed = false;
         LevelChunkSection[] sections = chunk.getSections();
 
-        ChunkRuleCache chunkCache = new ChunkRuleCache(level, chunk.getPos());
+        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+
+        int chunkStartX = chunk.getPos().getMinBlockX();
+        int chunkStartZ = chunk.getPos().getMinBlockZ();
+
+        LevelData levelData = level.getLevelData();
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+
+        RuleManager.RuleContext ctx = new RuleManager.RuleContext(level, mutablePos, spawnPos, true, null);
 
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
-            if (section == null) continue;
+            if (section == null || section.hasOnlyAir()) continue;
 
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
-            int startX = chunk.getPos().getMinBlockX();
-            int startZ = chunk.getPos().getMinBlockZ();
 
-            for (int x = 0; x < 16; x++) {
-                for (int y = 0; y < 16; y++) {
-                    for (int z = 0; z < 16; z++) {
-                        BlockPos pos = new BlockPos(startX + x, bottomY + y, startZ + z);
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
                         BlockState original = section.getBlockState(x, y, z);
+                        if (original.isAir()) continue;
 
-                        ReplacementResult result = RuleManager.getReplacementResult(original, pos, level, true, false, chunkCache);
-                        BlockState replacement = result.state();
+                        mutablePos.set(chunkStartX + x, bottomY + y, chunkStartZ + z);
 
-                        if (replacement != original) {
-                            CompoundTag nbtData = null;
-                            if (result.keepNbt()) {
-                                BlockEntity be = chunk.getBlockEntity(pos);
-                                if (be != null) {
-                                    nbtData = be.saveWithoutMetadata();
-                                    chunk.removeBlockEntity(pos);
-                                }
+                        ctx.set(mutablePos, null);
+                        ReplacementResult result = RuleManager.getReplacementResult(original, ctx, null, false);
+
+                        if (result != null) {
+                            BlockState replacement = result.state();
+                            if (replacement != original) {
+                                manageBlockEntity(chunk, mutablePos, result, level, replacement);
+                                changed = true;
                             }
-
-                            level.setBlock(pos, replacement, 2);
-
-                            if (nbtData != null) {
-                                BlockEntity newBe = chunk.getBlockEntity(pos);
-                                if (newBe != null) {
-                                    newBe.load(nbtData);
-                                }
-                            }
-
-                            changed = true;
                         }
                     }
                 }
@@ -75,6 +70,26 @@ public class RetrogenHandler {
 
         if (changed && level instanceof ServerLevel serverLevel) {
             serverLevel.getChunkSource().blockChanged(chunk.getPos().getWorldPosition());
+        }
+    }
+
+    private static void manageBlockEntity(LevelChunk chunk, BlockPos pos, ReplacementResult result, Level level, BlockState replacement) {
+        CompoundTag nbtData = null;
+        if (result.keepNbt()) {
+            BlockEntity be = chunk.getBlockEntity(pos);
+            if (be != null) {
+                nbtData = be.saveWithoutMetadata();
+                chunk.removeBlockEntity(pos);
+            }
+        }
+
+        level.setBlock(pos, replacement, 2);
+
+        if (nbtData != null) {
+            BlockEntity newBe = chunk.getBlockEntity(pos);
+            if (newBe != null) {
+                newBe.load(nbtData);
+            }
         }
     }
 }
