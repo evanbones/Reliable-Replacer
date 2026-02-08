@@ -22,7 +22,7 @@ public class RetrogenHandler {
 
         Level level = chunk.getLevel();
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
 
         ChunkRuleCache cache = new ChunkRuleCache(level, chunk.getPos());
         RuleManager.RuleContext ctx = new RuleManager.RuleContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk);

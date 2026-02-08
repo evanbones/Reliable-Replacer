@@ -202,7 +202,7 @@ public class RuleManager {
     @Nullable
     public static ReplacementResult getReplacementResult(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
         if (cache == null) {
             cache = new ChunkRuleCache(level, new ChunkPos(pos));
         }

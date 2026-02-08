@@ -11,6 +11,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,7 +22,7 @@ import java.util.Map;
 @Mixin(ChunkSerializer.class)
 public class ChunkSerializerMixin {
     @Inject(method = "read", at = @At("HEAD"))
-    private static void onReadChunk(ServerLevel level, PoiManager poi, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
+    private static void onReadChunk(ServerLevel level, PoiManager poiManager, RegionStorageInfo regionStorageInfo, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
         Map<String, String> remapper = ModConfig.get().missingIdMap;
         if (remapper == null || remapper.isEmpty() || !tag.contains("sections", Tag.TAG_LIST)) return;
 
@@ -60,7 +61,7 @@ public class ChunkSerializerMixin {
     }
 
     @Inject(method = "read", at = @At("RETURN"))
-    private static void onReadReturn(ServerLevel level, PoiManager poiManager, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ChunkAccess> cir) {
+    private static void onReadReturn(ServerLevel level, PoiManager poiManager, RegionStorageInfo regionStorageInfo, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
         ChunkAccess chunk = cir.getReturnValue();
 
         if (chunk instanceof IProcessedChunk processedChunk) {

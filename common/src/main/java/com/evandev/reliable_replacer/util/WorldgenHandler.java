@@ -21,7 +21,7 @@ public class WorldgenHandler {
 
         ChunkPos chunkPos = chunk.getPos();
         LevelData levelData = levelAccessor.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
 
         ChunkRuleCache cache = new ChunkRuleCache(levelAccessor, chunkPos);
         RuleManager.RuleContext ctx = new RuleManager.RuleContext(levelAccessor, new BlockPos(0, 0, 0), spawnPos, false, chunk);
