@@ -21,7 +21,7 @@ some reasons to consider switching!
 * Live config reloading! Run `/reload` and see your changes instantly take place.
 * Reliable Replacer is fully server-side, so it's compatible with Vanilla clients!
 * Advanced filtering:
-    * Filter swaps by biome, dimensions, placed feature, coordinates, or structure!
+    * Filter swaps by biome, dimensions, coordinates, or structure!
     * Toggle retrogen on or off _per rule_.
     * Toggle player placement replacing _per rule_.
 * Much more flexible configuration, supporting simple JSON configuration in user-defined folders and integrating with

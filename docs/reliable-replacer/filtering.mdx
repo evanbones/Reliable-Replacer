@@ -21,7 +21,6 @@ If a field is omitted, that specific condition is ignored (i.e., it matches ever
 | `biomes` | List\<String\> | List of biome IDs where this rule applies. |
 | `dimensions` | List\<String\> | List of dimension IDs (e.g., `minecraft:overworld`). |
 | `structures` | List\<String\> | List of structure IDs. The rule only runs if the block is inside one of these structures. |
-| `features` | List\<String\> | List of placed feature IDs. Supports wildcards (e.g., `modid:*`) and tags (e.g., `#minecraft:ores`). The rule only runs if the block is being placed by one of these features. |
 
 ### Coordinates
 Coordinate fields accept simple numbers or relative text.
@@ -42,7 +41,6 @@ Coordinate fields accept simple numbers or relative text.
 
 | Field | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `cancel_feature` | Boolean | `false` | If `true`, the features listed in `features` will be completely stopped from generating. |
 | `retrogen` | Boolean | `true` | If `true`, this rule runs on already generated chunks when they are loaded. |
 | `player_blocks` | Boolean | `true` | If `true`, this rule applies instantly when a player places a block. |
 | `keep_nbt` | Boolean | `true` | If `true`, this rule retains block NBT when swapping (chest loot, inventories, etc). |

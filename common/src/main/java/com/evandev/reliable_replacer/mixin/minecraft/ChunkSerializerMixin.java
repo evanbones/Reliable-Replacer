@@ -38,7 +38,6 @@ public class ChunkSerializerMixin {
                         String name = entry.getString("Name");
                         if (remapper.containsKey(name)) {
                             entry.putString("Name", remapper.get(name));
-                            entry.remove("Properties");
                         }
                     }
                 }
@@ -48,18 +47,29 @@ public class ChunkSerializerMixin {
 
     @Inject(method = "write", at = @At("RETURN"))
     private static void onWrite(ServerLevel level, ChunkAccess chunk, CallbackInfoReturnable<CompoundTag> cir) {
-        if (chunk instanceof IProcessedChunk processedChunk && processedChunk.reliableReplacer$hasBeenProcessed()) {
+        if (chunk instanceof IProcessedChunk processedChunk) {
             CompoundTag tag = cir.getReturnValue();
-            tag.putBoolean("ReliableReplacerProcessed", true);
+
+            if (processedChunk.reliableReplacer$hasBeenProcessed()) {
+                tag.putBoolean("ReliableReplacerProcessed", true);
+            }
+            if (processedChunk.reliableReplacer$isDirty()) {
+                tag.putBoolean("ReliableReplacerDirty", true);
+            }
         }
     }
 
     @Inject(method = "read", at = @At("RETURN"))
-    private static void onReadReturn(ServerLevel level, PoiManager poiManager, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ProtoChunk> cir) {
-        ProtoChunk chunk = cir.getReturnValue();
+    private static void onReadReturn(ServerLevel level, PoiManager poiManager, ChunkPos pos, CompoundTag tag, CallbackInfoReturnable<ChunkAccess> cir) {
+        ChunkAccess chunk = cir.getReturnValue();
+
         if (chunk instanceof IProcessedChunk processedChunk) {
             if (tag.contains("ReliableReplacerProcessed") && tag.getBoolean("ReliableReplacerProcessed")) {
                 processedChunk.reliableReplacer$markProcessed();
+            }
+
+            if (tag.contains("ReliableReplacerDirty") && tag.getBoolean("ReliableReplacerDirty")) {
+                processedChunk.reliableReplacer$setDirty(true);
             }
         }
     }

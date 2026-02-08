@@ -1,14 +1,19 @@
 package com.evandev.reliable_replacer.util;
 
 import com.evandev.reliable_replacer.data.ReplacementRule;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -39,40 +44,49 @@ public class ChunkRuleCache {
     }
 
     private List<BoundingBox> computeBoxes(ReplacementRule rule) {
-        if (!(level instanceof ServerLevel serverLevel)) {
+        ServerLevel sl = null;
+        if (level instanceof ServerLevel s) {
+            sl = s;
+        } else if (level instanceof WorldGenRegion wgr) {
+            sl = wgr.getLevel();
+        }
+
+        if (sl == null) {
             return Collections.emptyList();
         }
 
+        StructureManager structureManager = sl.structureManager();
+        Registry<Structure> structRegistry = sl.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        ChunkAccess chunk = sl.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.STRUCTURE_REFERENCES);
+
         List<BoundingBox> boxes = new ArrayList<>();
-        Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        Map<Structure, LongSet> references = chunk.getAllReferences();
 
-        Set<StructureStart> uniqueStarts = new HashSet<>();
-
-        for (String structId : rule.structures) {
-            ResourceLocation rl = ResourceLocation.tryParse(structId);
-            if (rl != null && structRegistry.containsKey(rl)) {
+        for (ResourceLocation rl : rule.parsedStructures) {
+            if (structRegistry.containsKey(rl)) {
                 Structure structure = structRegistry.get(rl);
-                if (structure != null) {
-                    int minSection = serverLevel.getMinSection();
-                    int maxSection = serverLevel.getMaxSection();
+                if (structure != null && references.containsKey(structure)) {
+                    LongSet refs = references.get(structure);
 
-                    for (int y = minSection; y <= maxSection; y++) {
-                        List<StructureStart> starts =
-                                serverLevel.structureManager().startsForStructure(SectionPos.of(chunkPos, y), structure);
-                        uniqueStarts.addAll(starts);
+                    for (long packedChunkPos : refs) {
+                        ChunkPos structChunkPos = new ChunkPos(packedChunkPos);
+                        SectionPos startPos = SectionPos.of(structChunkPos, 0);
+
+                        StructureStart start = structureManager.getStartForStructure(
+                                startPos,
+                                structure,
+                                sl.getChunk(structChunkPos.x, structChunkPos.z, ChunkStatus.STRUCTURE_STARTS)
+                        );
+
+                        if (start != null && start.isValid()) {
+                            for (StructurePiece piece : start.getPieces()) {
+                                boxes.add(piece.getBoundingBox());
+                            }
+                        }
                     }
                 }
             }
         }
-
-        for (StructureStart start : uniqueStarts) {
-            if (start.isValid()) {
-                for (StructurePiece piece : start.getPieces()) {
-                    boxes.add(piece.getBoundingBox());
-                }
-            }
-        }
-
         return boxes;
     }
 }
