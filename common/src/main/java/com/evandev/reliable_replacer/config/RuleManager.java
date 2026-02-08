@@ -16,15 +16,18 @@ import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -84,7 +87,7 @@ public class RuleManager {
                 cancelRules.add(rule);
             }
 
-            if (rule.playerBlocks) {
+            if (rule.shouldRunPlayerBlocks()) {
                 anyLiveRules = true;
             }
 
@@ -247,7 +250,8 @@ public class RuleManager {
         for (ReplacementRule rule : candidates) {
             if (ctx.isRetrogen && !rule.shouldRunRetrogen()) continue;
 
-            if (isLivePlacement && !rule.playerBlocks) continue;
+            if (isLivePlacement && !rule.shouldRunPlayerBlocks()) continue;
+
             if (!checkRule(rule, ctx, cache)) continue;
             if (rule.not != null && checkRule(rule.not, ctx, cache)) continue;
 
@@ -313,22 +317,27 @@ public class RuleManager {
             if (cache != null) {
                 return cache.isPositionInStructure(rule, ctx.pos);
             }
-            ServerLevel serverLevel = null;
+
+            StructureManager structureManager = null;
+            RegistryAccess registryAccess = ctx.level.registryAccess();
+
             if (ctx.level instanceof ServerLevel sl) {
-                serverLevel = sl;
+                structureManager = sl.structureManager();
+            } else if (ctx.level instanceof WorldGenRegion wgr) {
+                structureManager = wgr.getLevel().structureManager();
             } else if (ctx.level instanceof ServerLevelAccessor sla) {
-                serverLevel = sla.getLevel();
+                structureManager = sla.getLevel().structureManager();
             }
 
-            if (serverLevel != null) {
+            if (structureManager != null) {
                 boolean inStructure = false;
-                Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+                Registry<Structure> structRegistry = registryAccess.registryOrThrow(Registries.STRUCTURE);
 
                 for (String structId : rule.structures) {
                     ResourceLocation rl = ResourceLocation.tryParse(structId);
                     if (rl != null && structRegistry.containsKey(rl)) {
                         Structure structure = structRegistry.get(rl);
-                        if (structure != null && serverLevel.structureManager().getStructureAt(ctx.pos, structure).isValid()) {
+                        if (structure != null && structureManager.getStructureAt(ctx.pos, structure).isValid()) {
                             inStructure = true;
                             break;
                         }
