@@ -24,6 +24,7 @@ import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.storage.LevelData;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.FileReader;
 import java.nio.file.Files;
@@ -45,6 +47,7 @@ import java.util.stream.Stream;
 public class RuleManager {
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
+    public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
     private static volatile List<ReplacementRule> ALL_RULES = Collections.emptyList();
     private static volatile List<ReplacementRule> FEATURE_CANCEL_RULES = Collections.emptyList();
@@ -73,12 +76,18 @@ public class RuleManager {
 
         List<ReplacementRule> cancelRules = new ArrayList<>();
         Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
+        boolean anyLiveRules = false;
 
         for (ReplacementRule rule : loadedRules) {
             rule.resolveBlocks();
             if (rule.cancelFeature) {
                 cancelRules.add(rule);
             }
+
+            if (rule.playerBlocks) {
+                anyLiveRules = true;
+            }
+
             for (Block b : rule.getInputBlocks()) {
                 blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
             }
@@ -87,8 +96,9 @@ public class RuleManager {
         ALL_RULES = loadedRules;
         FEATURE_CANCEL_RULES = cancelRules;
         RULES_BY_BLOCK = blockMap;
+        HAS_LIVE_RULES = anyLiveRules;
 
-        Constants.LOG.info("Loaded {} replacement rules.", ALL_RULES.size());
+        Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}", ALL_RULES.size(), HAS_LIVE_RULES);
 
         if (server != null) {
             for (ServerLevel level : server.getAllLevels()) {
@@ -140,7 +150,8 @@ public class RuleManager {
     }
 
     public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement) {
-        return getReplacement(original, pos, level, isRetrogen, isLivePlacement, null);
+        ReplacementResult result = getReplacementResult(original, pos, level, isRetrogen, isLivePlacement, null);
+        return result == null ? original : result.state();
     }
 
     private static void createExampleFile(Path dir) {
@@ -215,46 +226,42 @@ public class RuleManager {
         }
     }
 
+    @Nullable
     public static ReplacementResult getReplacementResult(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
+        LevelData levelData = level.getLevelData();
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen, null);
+        return getReplacementResult(original, ctx, cache, isLivePlacement);
+    }
+
+    @Nullable
+    public static ReplacementResult getReplacementResult(BlockState original, RuleContext ctx, ChunkRuleCache cache, boolean isLivePlacement) {
         if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null)
-            return new ReplacementResult(original, false);
+            return null;
 
         List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
         if (candidates == null) {
-            return new ReplacementResult(original, false);
+            return null;
         }
 
-        LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
-
-        RuleContext ctx = new RuleContext(level, pos, spawnPos, isRetrogen);
-
         for (ReplacementRule rule : candidates) {
-            if (isRetrogen && !rule.retrogen) continue;
+            if (ctx.isRetrogen && !rule.shouldRunRetrogen()) continue;
+
             if (isLivePlacement && !rule.playerBlocks) continue;
-
-            if (cache != null && !cache.isRuleValid(rule)) {
-                continue;
-            }
-
-            if (!checkRule(rule, ctx, cache == null)) continue;
-            if (rule.not != null && checkRule(rule.not, ctx, cache == null)) continue;
+            if (!checkRule(rule, ctx, cache)) continue;
+            if (rule.not != null && checkRule(rule.not, ctx, cache)) continue;
 
             if (original.is(rule.getOutputBlock())) {
-                return new ReplacementResult(original, false);
+                return null;
             }
 
             return new ReplacementResult(createReplacementState(original, rule), rule.keepNbt);
         }
 
-        return new ReplacementResult(original, false);
+        return null;
     }
 
-    public static BlockState getReplacement(BlockState original, BlockPos pos, LevelAccessor level, boolean isRetrogen, boolean isLivePlacement, ChunkRuleCache cache) {
-        return getReplacementResult(original, pos, level, isRetrogen, isLivePlacement, cache).state();
-    }
-
-    private static boolean checkRule(ReplacementRule rule, RuleContext ctx, boolean performStructureCheck) {
+    private static boolean checkRule(ReplacementRule rule, RuleContext ctx, ChunkRuleCache cache) {
         // Coordinate Checks
         if (!checkRange(ctx.pos.getX(), rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
                 rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, ctx.spawnPos.getX())) return false;
@@ -266,7 +273,7 @@ public class RuleManager {
                 rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, ctx.spawnPos.getZ())) return false;
 
         // Dimension Check
-        if (performStructureCheck && !rule.dimensions.isEmpty()) {
+        if (!rule.dimensions.isEmpty()) {
             ResourceLocation dimId = ctx.getDimId();
             if (dimId != null && !rule.dimensions.contains(dimId.toString())) return false;
         }
@@ -279,7 +286,6 @@ public class RuleManager {
 
         // Feature Check
         if (!rule.features.isEmpty()) {
-            if (ctx.isRetrogen) return false;
             Registry<PlacedFeature> placedRegistry = ctx.level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
             Registry<ConfiguredFeature<?, ?>> configuredRegistry = ctx.level.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE);
 
@@ -303,8 +309,18 @@ public class RuleManager {
         }
 
         // Structure Check
-        if (performStructureCheck && !rule.structures.isEmpty()) {
-            if (ctx.level instanceof ServerLevel serverLevel) {
+        if (!rule.structures.isEmpty()) {
+            if (cache != null) {
+                return cache.isPositionInStructure(rule, ctx.pos);
+            }
+            ServerLevel serverLevel = null;
+            if (ctx.level instanceof ServerLevel sl) {
+                serverLevel = sl;
+            } else if (ctx.level instanceof ServerLevelAccessor sla) {
+                serverLevel = sla.getLevel();
+            }
+
+            if (serverLevel != null) {
                 boolean inStructure = false;
                 Registry<Structure> structRegistry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
 
@@ -401,27 +417,38 @@ public class RuleManager {
         return to.setValue(property, from.getValue(property));
     }
 
-    private static class RuleContext {
-        final LevelAccessor level;
-        final BlockPos pos;
-        final BlockPos spawnPos;
-        final boolean isRetrogen;
+    public static class RuleContext {
+        public final LevelAccessor level;
+        public final BlockPos spawnPos;
+        public final boolean isRetrogen;
+
+        public BlockPos pos;
+        public Holder<Biome> preCachedBiome;
 
         private ResourceLocation biomeId;
         private ResourceLocation dimId;
         private boolean computedBiome = false;
         private boolean computedDim = false;
 
-        RuleContext(LevelAccessor level, BlockPos pos, BlockPos spawnPos, boolean isRetrogen) {
+        public RuleContext(LevelAccessor level, BlockPos pos, BlockPos spawnPos, boolean isRetrogen, Holder<Biome> preCachedBiome) {
             this.level = level;
             this.pos = pos;
             this.spawnPos = spawnPos;
             this.isRetrogen = isRetrogen;
+            this.preCachedBiome = preCachedBiome;
+        }
+
+        public void set(BlockPos pos, Holder<Biome> biome) {
+            this.pos = pos;
+            this.preCachedBiome = biome;
+            this.computedBiome = false;
+            this.biomeId = null;
         }
 
         ResourceLocation getBiomeId() {
             if (!computedBiome) {
-                Holder<Biome> biomeHolder = level.getBiome(pos);
+                Holder<Biome> biomeHolder;
+                biomeHolder = Objects.requireNonNullElseGet(preCachedBiome, () -> level.getBiome(pos));
                 biomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
                 computedBiome = true;
             }

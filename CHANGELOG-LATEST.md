@@ -1,7 +1,8 @@
-### Added
-
-- Added support for retaining NBT data with `keep_nbt` (default true).
-
 ### Changed
 
-- Rename `apply_to_player_placement` to `player_blocks`.
+- Performance improvements.
+- Retrogen is disabled by default on structure, biome, and feature filters, unless specifically enabled with `"retrogen": "true"`.
+
+### Fixed
+
+- Fixed structure filters not working properly with multiple rules.

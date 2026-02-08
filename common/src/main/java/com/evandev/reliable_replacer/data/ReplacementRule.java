@@ -43,7 +43,7 @@ public class ReplacementRule {
     public boolean keepNbt = true;
 
     @SerializedName("retrogen")
-    public boolean retrogen = true;
+    public Boolean retrogen = null;
 
     @SerializedName("cancel_feature")
     public boolean cancelFeature = false;
@@ -106,6 +106,11 @@ public class ReplacementRule {
 
         parseToCache(minZ, v -> cachedMinZ = v, v -> cachedMinZOffset = v);
         parseToCache(maxZ, v -> cachedMaxZ = v, v -> cachedMaxZOffset = v);
+    }
+
+    public boolean shouldRunRetrogen() {
+        if (retrogen != null) return retrogen;
+        return biomes.isEmpty() && structures.isEmpty() && features.isEmpty();
     }
 
     private void parseToCache(String val, Consumer<Integer> absSetter, Consumer<Integer> offsetSetter) {
