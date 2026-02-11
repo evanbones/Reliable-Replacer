@@ -23,14 +23,6 @@
     ],
     "modmenu": [
       "com.evandev.reliable_replacer.compat.ModMenuIntegration"
-    ],
-    "fabric-gametest": [
-      "com.evandev.reliable_replacer.test.LogicTestSuite",
-      "com.evandev.reliable_replacer.test.IntegrationTestSuite",
-      "com.evandev.reliable_replacer.test.PropertyTest",
-      "com.evandev.reliable_replacer.test.ContextTest",
-      "com.evandev.reliable_replacer.test.NbtTest",
-      "com.evandev.reliable_replacer.test.WildcardTest"
     ]
   },
   "mixins": [

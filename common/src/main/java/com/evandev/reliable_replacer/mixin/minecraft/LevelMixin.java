@@ -30,7 +30,7 @@ public abstract class LevelMixin {
         if (level.isClientSide || !ModConfig.get().enabled) return;
 
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
         LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
         ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
 
