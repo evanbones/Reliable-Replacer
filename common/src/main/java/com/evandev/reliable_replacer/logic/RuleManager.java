@@ -1,0 +1,260 @@
+package com.evandev.reliable_replacer.logic;
+
+import com.evandev.reliable_replacer.Constants;
+import com.evandev.reliable_replacer.api.IProcessedChunk;
+import com.evandev.reliable_replacer.api.IReplacementContext;
+import com.evandev.reliable_replacer.config.ModConfig;
+import com.evandev.reliable_replacer.data.ReplacementResult;
+import com.evandev.reliable_replacer.data.ReplacementRule;
+import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
+import com.evandev.reliable_replacer.platform.Services;
+import com.evandev.reliable_replacer.systems.RetrogenHandler;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.chunk.LevelChunk;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+
+public class RuleManager {
+    private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
+    private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
+    public static volatile boolean HAS_LIVE_RULES = false;
+    public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
+
+    public static void load(MinecraftServer server) {
+        List<ReplacementRule> loadedRules = new ArrayList<>();
+        Path configDir = Services.PLATFORM.getConfigDirectory().resolve("reliable_replacer");
+
+        if (!Files.exists(configDir)) {
+            try {
+                Files.createDirectories(configDir);
+                createExampleFile(configDir);
+                createSwapperFile(configDir);
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to create config directory", e);
+            }
+        }
+
+        try (Stream<Path> paths = Files.walk(configDir)) {
+            paths.filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".json"))
+                    .forEach(p -> parseFile(p, loadedRules));
+        } catch (Exception e) {
+            Constants.LOG.error("Failed to load reliable replacer rules", e);
+        }
+
+        Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
+        boolean anyLiveRules = false;
+
+        for (ReplacementRule rule : loadedRules) {
+            rule.resolveBlocks();
+
+            for (Block b : rule.getInputBlocks()) {
+                blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
+                if (rule.shouldRunPlayerBlocks()) {
+                    anyLiveRules = true;
+                }
+            }
+        }
+
+        RULES_BY_BLOCK = blockMap;
+        HAS_LIVE_RULES = anyLiveRules;
+
+        Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}", RULES_BY_BLOCK.size(), HAS_LIVE_RULES);
+
+        if (server != null) {
+            for (ServerLevel level : server.getAllLevels()) {
+                ChunkMapAccessor map = (ChunkMapAccessor) level.getChunkSource().chunkMap;
+                for (ChunkHolder holder : map.reliableReplacer$getChunks()) {
+                    LevelChunk chunk = holder.getTickingChunk();
+                    if (chunk != null) {
+                        ((IProcessedChunk) chunk).reliableReplacer$setDirty(true);
+                        RetrogenHandler.processChunk(chunk);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void parseFile(Path path, List<ReplacementRule> list) {
+        try (FileReader fileReader = new FileReader(path.toFile())) {
+            JsonElement json = JsonParser.parseReader(fileReader);
+            if (json.isJsonArray()) {
+                for (JsonElement e : json.getAsJsonArray()) {
+                    list.add(GSON.fromJson(e, ReplacementRule.class));
+                }
+            } else if (json.isJsonObject()) {
+                if (json.getAsJsonObject().has("swapper")) {
+                    json.getAsJsonObject().getAsJsonObject("swapper").entrySet().forEach(entry -> {
+                        ReplacementRule rule = new ReplacementRule();
+                        rule.inputs.add(entry.getKey());
+                        rule.output = entry.getValue().getAsString();
+                        list.add(rule);
+                    });
+                } else {
+                    list.add(GSON.fromJson(json, ReplacementRule.class));
+                }
+            }
+        } catch (Exception e) {
+            Constants.LOG.error("Error parsing rule file: {}", path, e);
+        }
+    }
+
+    @Nullable
+    public static ReplacementResult getReplacementResult(BlockState original, IReplacementContext ctx, boolean isLivePlacement) {
+        if (!ModConfig.get().enabled || RULES_BY_BLOCK.isEmpty() || original == null)
+            return null;
+
+        List<ReplacementRule> candidates = RULES_BY_BLOCK.get(original.getBlock());
+        if (candidates == null) {
+            return null;
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            ReplacementRule rule = candidates.get(i);
+
+            if (ctx.isRetrogen() && !rule.shouldRunRetrogen()) continue;
+            if (isLivePlacement && !rule.shouldRunPlayerBlocks()) continue;
+
+            if (!RuleEvaluator.checkRule(rule, original, ctx)) continue;
+            if (rule.not != null && RuleEvaluator.checkRule(rule.not, original, ctx)) continue;
+
+            if (original.is(rule.getOutputBlock())) {
+                return null;
+            }
+
+            BlockState replacement = createReplacementState(original, rule);
+            if (replacement.equals(original)) {
+                return null;
+            }
+
+            return new ReplacementResult(replacement, rule.keepNbt);
+        }
+
+        return null;
+    }
+
+    private static BlockState createReplacementState(BlockState original, ReplacementRule rule) {
+        Block outputBlock = rule.getOutputBlock();
+        BlockState newState = outputBlock.defaultBlockState();
+
+        if (rule.keepStates) {
+            Map<Integer, Property<?>> targetProperties = PROPERTY_CACHE.computeIfAbsent(outputBlock, block -> {
+                Map<Integer, Property<?>> map = new java.util.HashMap<>();
+                for (Property<?> prop : block.defaultBlockState().getProperties()) {
+                    map.put(prop.generateHashCode(), prop);
+                }
+                return map;
+            });
+
+            for (Property<?> prop : original.getProperties()) {
+                Property<?> targetProp = targetProperties.get(prop.generateHashCode());
+                if (targetProp != null) {
+                    newState = copyProperty(original, newState, targetProp);
+                }
+            }
+        }
+        return newState;
+    }
+
+    private static <T extends Comparable<T>> BlockState copyProperty(BlockState from, BlockState to, Property<T> property) {
+        return to.setValue(property, from.getValue(property));
+    }
+
+    private static void createExampleFile(Path dir) {
+        Path exampleFile = dir.resolve("example_rules.json.disabled");
+        String content = """
+                [
+                  {
+                    "_comment_description": "BASIC SETTINGS: What to replace and what to replace it with.",
+                    "inputs": [
+                      "minecraft:cobblestone",
+                      "minecraft:stone_bricks"
+                    ],
+                    "output": "minecraft:mossy_cobblestone",
+                
+                    "_comment_logic": "ADVANCED LOGIC: How the replacement behaves.",
+                    "keep_states": true,
+                    "retrogen": true,
+                    "player_blocks": true,
+                    "keep_nbt": true,
+                    "probability": 0.5,
+                
+                    "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
+                    "biomes": [
+                      "minecraft:jungle",
+                      "minecraft:sparse_jungle"
+                    ],
+                    "dimensions": [
+                      "minecraft:overworld"
+                    ],
+                    "structures": [
+                      "minecraft:jungle_pyramid"
+                    ],
+                
+                    "_comment_states": "STATE FILTERS: Only replace if input has these properties",
+                    "state_properties": {
+                        "half": "upper"
+                    },
+                
+                    "_comment_conditions": "NEIGHBORS: Only replace if surroundings match",
+                    "neighbors": {
+                        "up": "minecraft:air",
+                        "down": "minecraft:grass_block"
+                    },
+                
+                    "_comment_coords": "COORDINATES: Supports absolute numbers or worldspawn relative values.",
+                    "min_y": "60",
+                    "max_y": "100",
+                    "min_x": "spawn-500",
+                    "max_x": "spawn+500",
+                    "min_z": "spawn-500",
+                    "max_z": "spawn+500",
+                
+                    "_comment_exclusion": "EXCLUSIONS: If the 'not' block matches, the rule is SKIPPED.",
+                    "not": {
+                      "biomes": ["minecraft:river"]
+                    }
+                  }
+                ]
+                """;
+
+        try {
+            Files.writeString(exampleFile, content, StandardOpenOption.CREATE);
+        } catch (Exception e) {
+            Constants.LOG.error("Failed to generate example rule file", e);
+        }
+    }
+
+    private static void createSwapperFile(Path dir) {
+        Path swapperFile = dir.resolve("swapper.json");
+        String content = """
+                {
+                  "swapper": {
+                    "examplemod:input_block": "examplemod:output_block"
+                  }
+                }
+                """;
+
+        try {
+            Files.writeString(swapperFile, content, StandardOpenOption.CREATE);
+        } catch (Exception e) {
+            Constants.LOG.error("Failed to generate swapper rule file", e);
+        }
+    }
+}

@@ -1,4 +1,4 @@
-package com.evandev.reliable_replacer.util;
+package com.evandev.reliable_replacer.api;
 
 public interface IProcessedChunk {
     boolean reliableReplacer$hasBeenProcessed();

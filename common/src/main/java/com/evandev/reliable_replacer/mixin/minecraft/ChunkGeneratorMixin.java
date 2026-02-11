@@ -1,6 +1,6 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
-import com.evandev.reliable_replacer.util.WorldgenHandler;
+import com.evandev.reliable_replacer.systems.WorldgenHandler;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;

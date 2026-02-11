@@ -1,7 +1,7 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
-import com.evandev.reliable_replacer.util.IProcessedChunk;
-import com.evandev.reliable_replacer.util.RetrogenHandler;
+import com.evandev.reliable_replacer.api.IProcessedChunk;
+import com.evandev.reliable_replacer.systems.RetrogenHandler;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;

@@ -12,6 +12,7 @@ If a field is omitted, that specific condition is ignored (i.e., it matches ever
 | :--- | :--- | :--- |
 | `inputs` | List\<String\> | A list of block IDs or namespaces to replace. Supports wildcards (e.g., `modid:*`). |
 | `output` | String | The block ID to place instead. Defaults to Air if omitted. |
+| `remove` | Boolean | If `true`, the block is explicitly replaced with Air. Overrides `output`. |
 | `keep_states` | Boolean | If `true`, attempts to copy shared properties (rotation, waterlogging, etc.) to the new block. Default: `true`. See [State Retention](#state-retention) below for details. |
 
 ### World Conditions
@@ -41,10 +42,40 @@ Coordinate fields accept simple numbers or relative text.
 
 | Field | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
+| `probability` | Float | `1.0` | A number between `0.0` and `1.0` representing the chance for the replacement to occur (e.g., `0.5` = 50%). |
 | `retrogen` | Boolean | `true` | If `true`, this rule runs on already generated chunks when they are loaded. |
 | `player_blocks` | Boolean | `true` | If `true`, this rule applies instantly when a player places a block. |
 | `keep_nbt` | Boolean | `true` | If `true`, this rule retains block NBT when swapping (chest loot, inventories, etc). |
 | `not` | Object | `null` | An object containing conditions to exclude. If the `not` conditions match, the rule is skipped. |
+
+### State Filters
+Use the `state_properties` field to only replace blocks that match specific states (properties).
+
+```json
+"state_properties": {
+  "half": "upper",
+  "lit": "true"
+}
+
+```
+
+* The key is the property name (e.g., `facing`, `age`, `layers`).
+* The value is the required state as a string.
+
+### Neighbor Filters
+
+Use the `neighbors` field to only replace blocks if their neighbors match specific block IDs.
+
+```json
+"neighbors": {
+  "up": "minecraft:air",
+  "down": "minecraft:grass_block"
+}
+
+```
+
+* **Keys:** Directions (`up`, `down`, `north`, `south`, `east`, `west`).
+* **Values:** Block ID to check for. Supports wildcards (`modid:*`).
 
 ### State Retention
 
@@ -52,10 +83,12 @@ When `keep_states` is set to `true` (default), the mod attempts to be smart abou
 
 **How it works:**
 The mod looks for properties that exist on **both** the original block and the replacement block.
+
 * If both blocks share a property definition (e.g., `facing`, `waterlogged`, `power`, `lit`), the value is copied over.
 * If a property exists on the original but not the replacement (or vice versa), it is simply ignored.
 
 **Examples:**
+
 * **Perfect Match (Stair -> Stair):** You replace `oak_stairs` with `stone_stairs`. Both blocks have `facing`, `half`, `shape`, and `waterlogged`. The new stairs will face the exact same way and connect exactly like the old ones.
 * **Partial Match (Chest -> Furnace):** You replace a `chest` with a `furnace`. Both blocks have the `facing` property. The furnace will face the same direction as the chest. However, the chest's `type` property (left/right/single) is ignored because furnaces don't have it.
 * **No Match (Log -> Furnace):** You replace an `oak_log` with a `furnace`. Logs use the `axis` property (x, y, z) for rotation. Furnaces use the `facing` property (north, south, east, west). Since these properties are different, the furnace will spawn with its default rotation.

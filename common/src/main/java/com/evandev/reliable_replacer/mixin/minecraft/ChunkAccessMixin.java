@@ -1,6 +1,6 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
-import com.evandev.reliable_replacer.util.IProcessedChunk;
+import com.evandev.reliable_replacer.api.IProcessedChunk;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

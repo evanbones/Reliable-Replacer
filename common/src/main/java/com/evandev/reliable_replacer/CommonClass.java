@@ -1,7 +1,7 @@
 package com.evandev.reliable_replacer;
 
 import com.evandev.reliable_replacer.config.ModConfig;
-import com.evandev.reliable_replacer.config.RuleManager;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.server.MinecraftServer;
 
 public class CommonClass {

@@ -11,6 +11,8 @@ Reliable Replacer offers the ability to modify world generation and block placem
 * **Block Swap Migration**: Natively supports the **Block Swap** configuration format for easy migration.
 * **Namespace Filtering**: Target entire mods using wildcard syntax (e.g., replace all `farmersdelight:*` blocks).
 * **State Retention**: Automatically copy block properties (like rotation or waterlogging) from the original block to the replacement.
+* **State Filtering**: Target specific block states (e.g., only replace doors that are `open=true` or stairs that are `half=top`).
+* **Probabilistic Replacement**: Define a chance for a replacement to happen (e.g., 50% chance) to add variation.
 * **Retrogen**: Apply replacement rules to chunks that have already been generated when they are loaded next.
 * **Player Placement**: Apply replacement rules to any blocks that players place.
 
@@ -19,4 +21,5 @@ The mod can apply rules conditionally based on the environment:
 * **Biomes**: Only replace blocks in specific biomes.
 * **Dimensions**: Restrict rules to the Nether, End, or custom dimensions.
 * **Structures**: Apply changes only inside specific structures (e.g., Villages, Strongholds).
+* **Neighbors**: Check adjacent blocks before replacing (e.g., only replace if there is Air above).
 * **Coordinates**: Filter by X, Y, Z coordinates, with support for world-spawn relative positions.

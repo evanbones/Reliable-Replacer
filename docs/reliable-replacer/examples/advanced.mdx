@@ -3,6 +3,48 @@ title: Advanced Replacements
 hide_meta: true
 ---
 
+### Probabilistic Replacement
+
+Adds a 30% chance for any Stone block to become Mossy Cobblestone.
+```json
+{
+  "inputs": ["minecraft:stone"],
+  "output": "minecraft:mossy_cobblestone",
+  "probability": 0.3
+}
+
+```
+
+### Neighbor Conditions
+
+Replaces Coarse Dirt with Grass Block, but only if there is Air directly above it.
+
+```json
+{
+  "inputs": ["minecraft:coarse_dirt"],
+  "output": "minecraft:grass_block",
+  "neighbors": {
+    "up": "minecraft:air"
+  }
+}
+
+```
+
+### Block State Filtering
+
+Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the bottom half (or other flowers) alone.
+
+```json
+{
+  "inputs": ["minecraft:sunflower", "minecraft:lilac"],
+  "state_properties": {
+    "half": "upper"
+  },
+  "remove": true
+}
+
+```
+
 ### Coordinate Range
 
 This rule replaces all Lava with Water, but only within a 200-block radius of the world spawn on the X and Z axes.
@@ -35,7 +77,6 @@ Replace Cobblestone with Mossy Cobblestone, but only inside Jungle Temples.
 ### Inverted Conditions (Not)
 
 You can use the `not` field to apply a rule everywhere **except** in specific conditions.
-
 This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
 
 ```json

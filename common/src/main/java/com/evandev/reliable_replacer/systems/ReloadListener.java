@@ -1,6 +1,8 @@
-package com.evandev.reliable_replacer.config;
+package com.evandev.reliable_replacer.systems;
 
 import com.evandev.reliable_replacer.CommonClass;
+import com.evandev.reliable_replacer.config.ModConfig;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import org.jetbrains.annotations.NotNull;

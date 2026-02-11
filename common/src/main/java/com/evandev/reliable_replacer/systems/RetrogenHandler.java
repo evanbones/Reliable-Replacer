@@ -1,8 +1,12 @@
-package com.evandev.reliable_replacer.util;
+package com.evandev.reliable_replacer.systems;
 
+import com.evandev.reliable_replacer.api.IProcessedChunk;
+import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.config.ModConfig;
-import com.evandev.reliable_replacer.config.RuleManager;
+import com.evandev.reliable_replacer.logic.ChunkRuleCache;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.data.ReplacementResult;
+import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -25,14 +29,13 @@ public class RetrogenHandler {
         BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
 
         ChunkRuleCache cache = new ChunkRuleCache(level, chunk.getPos());
-        RuleManager.RuleContext ctx = new RuleManager.RuleContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk);
+        LiveReplacementContext ctx = new LiveReplacementContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk, cache);
 
         AtomicBoolean changed = new AtomicBoolean(false);
 
         BlockUtil.processChunkBlocks(chunk, (pos, original) -> {
-            ctx.set(pos);
-
-            ReplacementResult result = RuleManager.getReplacementResult(original, ctx, cache, false);
+            ctx.setPos(pos);
+            ReplacementResult result = RuleManager.getReplacementResult(original, ctx, false);
 
             if (result != null) {
                 BlockState replacement = result.state();

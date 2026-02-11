@@ -1,7 +1,7 @@
 package com.evandev.reliable_replacer;
 
 import com.evandev.reliable_replacer.client.ClientConfigSetup;
-import com.evandev.reliable_replacer.config.ReloadListener;
+import com.evandev.reliable_replacer.systems.ReloadListener;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;

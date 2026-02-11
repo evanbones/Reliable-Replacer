@@ -24,6 +24,9 @@ some reasons to consider switching!
     * Filter swaps by biome, dimensions, coordinates, or structure!
     * Toggle retrogen on or off _per rule_.
     * Toggle player placement replacing _per rule_.
+    * Filter swaps by specific Block State Properties (e.g., lit=true, half=upper).
+    * Only replace a block if its neighbors (up, down, etc.) match a specific ID.
+    * Define a percentage chance for a rule to trigger.
 * Much more flexible configuration, supporting simple JSON configuration in user-defined folders and integrating with
   Cloth Config.
 * Per-rule toggleable persistence:
@@ -54,8 +57,8 @@ To migrate, simply copy the "swapper" block from your old configuration into thi
 
 ```
 
-*Note: Rules defined in `swapper.json` automatically inherit default settings (retrogen enabled, replace on player
-placement, etc.). For more advanced control, use the standard rule format.*
+*Note: Rules defined in `swapper.json` automatically inherit default settings, which are in full parity with Block
+Swap (retrogen enabled, replace on player placement, etc.). For more advanced control, use the standard rule format.*
 
 ## Features
 
@@ -81,8 +84,8 @@ Create a file called `my_replacement.json`, or whatever else you'd like, in `con
     ],
     "min_y": "-30",
     "max_y": "64",
-    "player_blocks": "true",
-    "keep_nbt": "true"
+    "player_blocks": true,
+    "keep_nbt": true
   },
   {
     "inputs": [
