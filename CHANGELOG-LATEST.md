@@ -1,11 +1,8 @@
-### Changed
+### Added
 
-- Large worldgen performance and memory improvements.
-- Removed filtering by feature for simplicity and performance.
-    - This is a relatively niche usecase compared to structure/biome filtering, and incurred a _heavy_ memory overhead.
-      Similar results are possible using Vanilla datapacks.
-
-### Fixed
-
-- Fix y-level handling on structure filters.
-- General backend refactors/cleanups.
+- Rules can now be restricted to specific block properties (e.g., only replacing `half=upper` for flowers or `lit=true`
+  for furnaces).
+- Added the ability to trigger replacements based on adjacent blocks (e.g., only replace if there is air above or water
+  below).
+- Introduced a probability field to allow for non-deterministic swaps.
+- Added a `remove` shorthand to rules to easily clear blocks without manually defining `minecraft:air` as the output.

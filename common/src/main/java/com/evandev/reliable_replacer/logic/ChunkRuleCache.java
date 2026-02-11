@@ -1,4 +1,4 @@
-package com.evandev.reliable_replacer.util;
+package com.evandev.reliable_replacer.logic;
 
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import it.unimi.dsi.fastutil.longs.LongSet;

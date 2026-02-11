@@ -1,6 +1,6 @@
 package com.evandev.reliable_replacer.client;
 
-import com.evandev.reliable_replacer.config.ClothConfigIntegration;
+import com.evandev.reliable_replacer.client.integration.ClothConfigIntegration;
 import com.evandev.reliable_replacer.platform.Services;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;

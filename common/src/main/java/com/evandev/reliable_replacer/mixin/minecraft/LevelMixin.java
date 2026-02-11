@@ -1,12 +1,14 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
+import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.config.ModConfig;
-import com.evandev.reliable_replacer.config.RuleManager;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.LevelData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,7 +29,10 @@ public abstract class LevelMixin {
         Level level = (Level) (Object) this;
         if (level.isClientSide || !ModConfig.get().enabled) return;
 
-        ReplacementResult result = RuleManager.getReplacementResult(state, pos, level, false, true, null);
+        LevelData levelData = level.getLevelData();
+        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
+        ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
 
         if (result != null) {
             BlockState replacement = result.state();

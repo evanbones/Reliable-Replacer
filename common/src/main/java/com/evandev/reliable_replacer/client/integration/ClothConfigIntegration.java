@@ -1,5 +1,6 @@
-package com.evandev.reliable_replacer.config;
+package com.evandev.reliable_replacer.client.integration;
 
+import com.evandev.reliable_replacer.config.ModConfig;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;

@@ -1,6 +1,6 @@
 package com.evandev.reliable_replacer;
 
-import com.evandev.reliable_replacer.config.ReloadListener;
+import com.evandev.reliable_replacer.systems.ReloadListener;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;

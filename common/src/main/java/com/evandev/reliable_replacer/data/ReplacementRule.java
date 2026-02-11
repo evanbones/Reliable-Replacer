@@ -7,7 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -43,6 +45,15 @@ public class ReplacementRule {
     @SerializedName("not")
     public ReplacementRule not;
 
+    @SerializedName("state_properties")
+    public Map<String, String> stateProperties = new HashMap<>();
+    @SerializedName("neighbors")
+    public Map<String, String> neighbors = new HashMap<>();
+    @SerializedName("probability")
+    public Float probability = null;
+    @SerializedName("remove")
+    public boolean remove = false;
+
     public transient Integer cachedMinX, cachedMaxX;
     public transient Integer cachedMinY, cachedMaxY;
     public transient Integer cachedMinZ, cachedMaxZ;
@@ -58,7 +69,9 @@ public class ReplacementRule {
 
     public Block getOutputBlock() {
         if (outputBlock == null) {
-            if (output == null) {
+            if (remove) {
+                outputBlock = Blocks.AIR;
+            } else if (output == null) {
                 outputBlock = Blocks.AIR;
             } else {
                 ResourceLocation id = ResourceLocation.tryParse(output);

@@ -1,39 +1,47 @@
 {
-    "schemaVersion": 1,
-    "id": "${mod_id}",
-    "version": "${version}",
-    "name": "${mod_name}",
-    "description": "${description}",
-    "authors": [
-        "${mod_author}"
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contact": {
+    "homepage": "https://github.com/evanbones/Reliable-Recipes",
+    "sources": "https://github.com/evanbones/Reliable-Recipes"
+  },
+  "license": "${license}",
+  "icon": "${mod_id}.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.evandev.reliable_replacer.ReliableReplacerMod"
     ],
-    "contact": {
-        "homepage": "https://github.com/evanbones/Reliable-Recipes",
-        "sources": "https://github.com/evanbones/Reliable-Recipes"
-    },
-    "license": "${license}",
-    "icon": "${mod_id}.png",
-    "environment": "*",
-    "entrypoints": {
-        "main": [
-            "com.evandev.reliable_replacer.ReliableReplacerMod"
-        ],
-        "client": [
-            "com.evandev.reliable_replacer.client.ReliableReplacerModClient"
-        ],
-        "modmenu": [
-            "com.evandev.reliable_replacer.compat.ModMenuIntegration"
-        ]
-    },
-    "mixins": [
-        "${mod_id}.mixins.json",
-        "${mod_id}.fabric.mixins.json"
+    "client": [
+      "com.evandev.reliable_replacer.client.ReliableReplacerModClient"
     ],
-    "depends": {
-        "fabricloader": ">=0.14",
-        "fabric": "*",
-        "minecraft": "${minecraft_version}",
-        "java": ">=17"
-    }
+    "modmenu": [
+      "com.evandev.reliable_replacer.compat.ModMenuIntegration"
+    ],
+    "fabric-gametest": [
+      "com.evandev.reliable_replacer.test.LogicTestSuite",
+      "com.evandev.reliable_replacer.test.IntegrationTestSuite",
+      "com.evandev.reliable_replacer.test.PropertyTest",
+      "com.evandev.reliable_replacer.test.ContextTest",
+      "com.evandev.reliable_replacer.test.NbtTest",
+      "com.evandev.reliable_replacer.test.WildcardTest"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json",
+    "${mod_id}.fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}",
+    "java": ">=17"
+  }
 }
   
