@@ -1,8 +1,8 @@
 package com.evandev.reliable_replacer;
 
 import com.evandev.reliable_replacer.client.ClientConfigSetup;
-import com.evandev.reliable_replacer.config.ReloadListener;
-import com.evandev.reliable_replacer.config.RuleManager;
+import com.evandev.reliable_replacer.logic.RuleManager;
+import com.evandev.reliable_replacer.systems.ReloadListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
