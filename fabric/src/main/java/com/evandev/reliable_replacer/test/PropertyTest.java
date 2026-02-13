@@ -9,6 +9,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Half;
 
 import java.util.Collections;
@@ -68,6 +69,52 @@ public class PropertyTest {
             }
         } catch (Exception e) {
             helper.fail("Crash detected when transferring properties to incompatible block: " + e.getMessage());
+        }
+
+        cleanup();
+        helper.succeed();
+    }
+
+    @GameTest(template = "minecraft:empty_3x3x3", batch = "rr_properties")
+    public void testOutputStateEnforcement(GameTestHelper helper) {
+        ReplacementRule rule = new ReplacementRule();
+        rule.inputs.add("minecraft:stone");
+        rule.output = "minecraft:oak_log";
+        rule.outputStateProperties.put("axis", "y");
+
+        injectSingleRule(rule);
+
+        MockReplacementContext ctx = new MockReplacementContext();
+        ReplacementResult result = RuleManager.getReplacementResult(Blocks.STONE.defaultBlockState(), ctx, true);
+
+        if (result == null) helper.fail("Rule failed to match");
+
+        if (result.state().getValue(BlockStateProperties.AXIS) != Direction.Axis.Y) {
+            helper.fail("Output state property (axis=y) was not enforced");
+        }
+
+        cleanup();
+        helper.succeed();
+    }
+
+    @GameTest(template = "minecraft:empty_3x3x3", batch = "rr_properties")
+    public void testRandomizeProperties(GameTestHelper helper) {
+        ReplacementRule rule = new ReplacementRule();
+        rule.inputs.add("minecraft:stone");
+        rule.output = "minecraft:furnace";
+        rule.randomizeProperties.add("facing");
+
+        injectSingleRule(rule);
+
+        MockReplacementContext ctx = new MockReplacementContext();
+
+        ctx.setPos(100, 64, 100);
+        ReplacementResult result = RuleManager.getReplacementResult(Blocks.STONE.defaultBlockState(), ctx, true);
+
+        if (result == null) helper.fail("Rule failed to match");
+
+        if (!result.state().hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+            helper.fail("Output state missing randomized property");
         }
 
         cleanup();

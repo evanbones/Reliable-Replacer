@@ -13,6 +13,35 @@ Adds a 30% chance for any Stone block to become Mossy Cobblestone.
   "probability": 0.3
 }
 
+
+```
+
+### Enforcing Output States
+
+Ensure that all placed Oak Logs are vertical (axis=y), regardless of how the original block was rotated.
+
+```json
+{
+  "inputs": ["#minecraft:logs"],
+  "output": "minecraft:oak_log",
+  "output_state_properties": {
+    "axis": "y"
+  }
+}
+
+```
+
+### Random Rotation
+
+Replace Pumpkins with Carved Pumpkins, but randomize their facing direction.
+
+```json
+{
+  "inputs": ["minecraft:pumpkin"],
+  "output": "minecraft:carved_pumpkin",
+  "randomize_properties": ["facing"]
+}
+
 ```
 
 ### Neighbor Conditions

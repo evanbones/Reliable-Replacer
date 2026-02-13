@@ -10,10 +10,19 @@ If a field is omitted, that specific condition is ignored (i.e., it matches ever
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `inputs` | List\<String\> | A list of block IDs or namespaces to replace. Supports wildcards (e.g., `modid:*`). |
-| `output` | String | The block ID to place instead. Defaults to Air if omitted. |
+| `inputs` | List\<String\> | A list of block IDs, namespaces, or tags to replace.<br/>**Specific:** `"minecraft:stone"`<br/>**Wildcard:** `"modid:*"`<br/>**Tags:** `"#minecraft:logs"` |
+| `output` | String | The block ID to place instead.<br/>Defaults to original block if omitted. |
 | `remove` | Boolean | If `true`, the block is explicitly replaced with Air. Overrides `output`. |
-| `keep_states` | Boolean | If `true`, attempts to copy shared properties (rotation, waterlogging, etc.) to the new block. Default: `true`. See [State Retention](#state-retention) below for details. |
+| `keep_states` | Boolean | If `true`, attempts to copy shared properties (rotation, waterlogging, etc.) to the new block. Default: `true`. See [State Retention](#state-retention) for details. |
+
+### Output Customization
+
+You can further control the properties of the placed block using these fields.
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `output_state_properties` | Map\<String, String\> | Force specific properties on the output block (e.g., `{"axis": "y"}`). Overrides `keep_states`. |
+| `randomize_properties` | List\<String\> | A list of properties to randomize (e.g., `["facing", "rotation"]`). Deterministic based on position. |
 
 ### World Conditions
 
@@ -82,6 +91,7 @@ Use the `neighbors` field to only replace blocks if their neighbors match specif
 When `keep_states` is set to `true` (default), the mod attempts to be smart about how it places the new block by copying the block state (properties) from the original block.
 
 **How it works:**
+
 The mod looks for properties that exist on **both** the original block and the replacement block.
 
 * If both blocks share a property definition (e.g., `facing`, `waterlogged`, `power`, `lit`), the value is copied over.
