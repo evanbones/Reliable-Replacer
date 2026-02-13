@@ -3,14 +3,14 @@ package com.evandev.reliable_replacer.data;
 import com.evandev.reliable_replacer.Constants;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class ReplacementRule {
@@ -47,6 +47,13 @@ public class ReplacementRule {
 
     @SerializedName("state_properties")
     public Map<String, String> stateProperties = new HashMap<>();
+
+    @SerializedName("output_state_properties")
+    public Map<String, String> outputStateProperties = new HashMap<>();
+
+    @SerializedName("randomize_properties")
+    public List<String> randomizeProperties = new ArrayList<>();
+
     @SerializedName("neighbors")
     public Map<String, String> neighbors = new HashMap<>();
     @SerializedName("probability")
@@ -66,13 +73,24 @@ public class ReplacementRule {
     public transient Set<ResourceLocation> parsedStructures;
     private transient Block outputBlock;
     private transient Set<Block> inputBlocks;
+    private transient boolean isOutputSelf = false;
 
+    /**
+     * Returns the output block.
+     *
+     * @return The block to place, or NULL if the output is "Self" (keep original).
+     */
+    @Nullable
     public Block getOutputBlock() {
-        if (outputBlock == null) {
+        if (outputBlock == null && !isOutputSelf) {
             if (remove) {
                 outputBlock = Blocks.AIR;
             } else if (output == null) {
-                outputBlock = Blocks.AIR;
+                isOutputSelf = true;
+                return null;
+            } else if (output.equalsIgnoreCase("self") || output.equalsIgnoreCase("this")) {
+                isOutputSelf = true;
+                return null;
             } else {
                 ResourceLocation id = ResourceLocation.tryParse(output);
                 outputBlock = id != null ? BuiltInRegistries.BLOCK.get(id) : Blocks.AIR;
@@ -91,7 +109,14 @@ public class ReplacementRule {
     public void resolveBlocks() {
         inputBlocks = new HashSet<>();
         for (String id : inputs) {
-            if (id.endsWith(":*")) {
+            if (id.startsWith("#")) {
+                ResourceLocation rl = ResourceLocation.tryParse(id.substring(1));
+                if (rl != null) {
+                    TagKey<Block> tagKey = TagKey.create(Registries.BLOCK, rl);
+                    BuiltInRegistries.BLOCK.getTagOrEmpty(tagKey)
+                            .forEach(holder -> inputBlocks.add(holder.value()));
+                }
+            } else if (id.endsWith(":*")) {
                 String namespace = id.split(":")[0];
                 BuiltInRegistries.BLOCK.entrySet().stream()
                         .filter(entry -> entry.getKey().location().getNamespace().equals(namespace))

@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
@@ -81,6 +82,8 @@ public class LiveReplacementContext implements IReplacementContext {
                 cachedDimId = sl.dimension().location();
             } else if (level instanceof WorldGenRegion wgr) {
                 cachedDimId = wgr.getLevel().dimension().location();
+            } else if (level instanceof Level l) {
+                cachedDimId = l.dimension().location();
             }
             dimIdComputed = true;
         }

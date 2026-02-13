@@ -13,6 +13,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -134,11 +135,7 @@ public class RuleManager {
             if (!RuleEvaluator.checkRule(rule, original, ctx)) continue;
             if (rule.not != null && RuleEvaluator.checkRule(rule.not, original, ctx)) continue;
 
-            if (original.is(rule.getOutputBlock())) {
-                return null;
-            }
-
-            BlockState replacement = createReplacementState(original, rule);
+            BlockState replacement = createReplacementState(original, rule, ctx.getPos());
             if (replacement.equals(original)) {
                 return null;
             }
@@ -149,13 +146,16 @@ public class RuleManager {
         return null;
     }
 
-    private static BlockState createReplacementState(BlockState original, ReplacementRule rule) {
+    private static BlockState createReplacementState(BlockState original, ReplacementRule rule, BlockPos pos) {
         Block outputBlock = rule.getOutputBlock();
+        if (outputBlock == null) {
+            outputBlock = original.getBlock();
+        }
         BlockState newState = outputBlock.defaultBlockState();
 
         if (rule.keepStates) {
             Map<Integer, Property<?>> targetProperties = PROPERTY_CACHE.computeIfAbsent(outputBlock, block -> {
-                Map<Integer, Property<?>> map = new java.util.HashMap<>();
+                Map<Integer, Property<?>> map = new HashMap<>();
                 for (Property<?> prop : block.defaultBlockState().getProperties()) {
                     map.put(prop.generateHashCode(), prop);
                 }
@@ -169,6 +169,28 @@ public class RuleManager {
                 }
             }
         }
+
+        if (rule.outputStateProperties != null && !rule.outputStateProperties.isEmpty()) {
+            for (Map.Entry<String, String> entry : rule.outputStateProperties.entrySet()) {
+                Property<?> prop = outputBlock.getStateDefinition().getProperty(entry.getKey());
+                if (prop != null) {
+                    newState = setPropertyFromString(newState, prop, entry.getValue());
+                }
+            }
+        }
+
+        if (rule.randomizeProperties != null && !rule.randomizeProperties.isEmpty()) {
+            long seed = pos.asLong();
+            Random rand = new Random(seed);
+
+            for (String propName : rule.randomizeProperties) {
+                Property<?> prop = outputBlock.getStateDefinition().getProperty(propName);
+                if (prop != null) {
+                    newState = randomizeProperty(newState, prop, rand);
+                }
+            }
+        }
+
         return newState;
     }
 
@@ -176,63 +198,87 @@ public class RuleManager {
         return to.setValue(property, from.getValue(property));
     }
 
+    private static <T extends Comparable<T>> BlockState setPropertyFromString(BlockState state, Property<T> property, String valueStr) {
+        Optional<T> val = property.getValue(valueStr);
+        return val.map(t -> state.setValue(property, t)).orElse(state);
+    }
+
+    private static <T extends Comparable<T>> BlockState randomizeProperty(BlockState state, Property<T> property, Random rand) {
+        List<T> values = new ArrayList<>(property.getPossibleValues());
+        if (values.isEmpty()) return state;
+        T randomValue = values.get(rand.nextInt(values.size()));
+        return state.setValue(property, randomValue);
+    }
+
     private static void createExampleFile(Path dir) {
         Path exampleFile = dir.resolve("example_rules.json.disabled");
         String content = """
-                [
-                  {
-                    "_comment_description": "BASIC SETTINGS: What to replace and what to replace it with.",
-                    "inputs": [
-                      "minecraft:cobblestone",
-                      "minecraft:stone_bricks"
-                    ],
-                    "output": "minecraft:mossy_cobblestone",
-                
-                    "_comment_logic": "ADVANCED LOGIC: How the replacement behaves.",
-                    "keep_states": true,
-                    "retrogen": true,
-                    "player_blocks": true,
-                    "keep_nbt": true,
-                    "probability": 0.5,
-                
-                    "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
-                    "biomes": [
-                      "minecraft:jungle",
-                      "minecraft:sparse_jungle"
-                    ],
-                    "dimensions": [
-                      "minecraft:overworld"
-                    ],
-                    "structures": [
-                      "minecraft:jungle_pyramid"
-                    ],
-                
-                    "_comment_states": "STATE FILTERS: Only replace if input has these properties",
-                    "state_properties": {
-                        "half": "upper"
-                    },
-                
-                    "_comment_conditions": "NEIGHBORS: Only replace if surroundings match",
-                    "neighbors": {
-                        "up": "minecraft:air",
-                        "down": "minecraft:grass_block"
-                    },
-                
-                    "_comment_coords": "COORDINATES: Supports absolute numbers or worldspawn relative values.",
-                    "min_y": "60",
-                    "max_y": "100",
-                    "min_x": "spawn-500",
-                    "max_x": "spawn+500",
-                    "min_z": "spawn-500",
-                    "max_z": "spawn+500",
-                
-                    "_comment_exclusion": "EXCLUSIONS: If the 'not' block matches, the rule is SKIPPED.",
-                    "not": {
-                      "biomes": ["minecraft:river"]
-                    }
-                  }
-                ]
-                """;
+                 [
+                   {
+                     "_comment_description": "BASIC SETTINGS: What to replace and what to replace it with.",
+                     "inputs": [
+                       "minecraft:cobblestone",
+                       "minecraft:stone_bricks"
+                     ],
+                     "output": "minecraft:mossy_cobblestone",
+                \s
+                     "_comment_logic": "ADVANCED LOGIC: How the replacement behaves.",
+                     "keep_states": true,
+                     "retrogen": true,
+                     "player_blocks": true,
+                     "keep_nbt": true,
+                     "probability": 0.5,
+                \s
+                     "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
+                     "biomes": [
+                       "minecraft:jungle",
+                       "minecraft:sparse_jungle"
+                     ],
+                     "dimensions": [
+                       "minecraft:overworld"
+                     ],
+                     "structures": [
+                       "minecraft:jungle_pyramid"
+                     ],
+                \s
+                     "_comment_states": "STATE FILTERS: Only replace if input has these properties",
+                     "state_properties": {
+                         "half": "upper",
+                         "axis": "y"
+                     },
+                    \s
+                     "_comment_output_states": "OUTPUT STATES: Force the output to have these properties",
+                     "output_state_properties": {
+                         "axis": "y"
+                     },
+                    \s
+                     "_comment_random": "RANDOMIZATION: Randomly rotate the output block",
+                     "randomize_properties": [
+                         "facing",
+                         "rotation"
+                     ],
+                \s
+                     "_comment_conditions": "NEIGHBORS: Only replace if surroundings match",
+                     "neighbors": {
+                         "up": "minecraft:air",
+                         "down": "minecraft:grass_block"
+                     },
+                \s
+                     "_comment_coords": "COORDINATES: Supports absolute numbers or worldspawn relative values.",
+                     "min_y": "60",
+                     "max_y": "100",
+                     "min_x": "spawn-500",
+                     "max_x": "spawn+500",
+                     "min_z": "spawn-500",
+                     "max_z": "spawn+500",
+                \s
+                     "_comment_exclusion": "EXCLUSIONS: If the 'not' block matches, the rule is SKIPPED.",
+                     "not": {
+                       "biomes": ["minecraft:river"]
+                     }
+                   }
+                 ]
+                \s""";
 
         try {
             Files.writeString(exampleFile, content, StandardOpenOption.CREATE);

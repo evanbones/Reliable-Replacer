@@ -1,9 +1,10 @@
 package com.evandev.reliable_replacer;
 
 import com.evandev.reliable_replacer.client.ClientConfigSetup;
-import com.evandev.reliable_replacer.systems.ReloadListener;
+import com.evandev.reliable_replacer.config.ModConfig;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.TagsUpdatedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -20,7 +21,7 @@ public class ReliableReplacerMod {
     public ReliableReplacerMod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
-        MinecraftForge.EVENT_BUS.addListener(this::addReloadListener);
+        MinecraftForge.EVENT_BUS.addListener(this::onTagsUpdated);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStopped);
         if (FMLEnvironment.dist.isClient()) {
@@ -40,7 +41,10 @@ public class ReliableReplacerMod {
         CommonClass.setServer(null);
     }
 
-    private void addReloadListener(final AddReloadListenerEvent event) {
-        event.addListener(new ReloadListener());
+    private void onTagsUpdated(TagsUpdatedEvent event) {
+        if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) {
+            ModConfig.load();
+            RuleManager.load(CommonClass.getServer());
+        }
     }
 }

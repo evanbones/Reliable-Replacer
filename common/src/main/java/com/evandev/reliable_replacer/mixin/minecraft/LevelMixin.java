@@ -25,10 +25,9 @@ public abstract class LevelMixin {
     private void onSetBlock(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<Boolean> cir) {
         if (!RuleManager.HAS_LIVE_RULES) return;
         if (reliableReplacer$isReplacing.get()) return;
+        if (!ModConfig.get().enabled) return;
 
         Level level = (Level) (Object) this;
-        if (level.isClientSide || !ModConfig.get().enabled) return;
-
         LevelData levelData = level.getLevelData();
         BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
         LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
