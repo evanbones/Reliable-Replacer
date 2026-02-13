@@ -1,8 +1,14 @@
+### Fixed
+
+- Fixed visual flicker when placing blocks.
+
 ### Added
 
-- Rules can now be restricted to specific block properties (e.g., only replacing `half=upper` for flowers or `lit=true`
-  for furnaces).
-- Added the ability to trigger replacements based on adjacent blocks (e.g., only replace if there is air above or water
-  below).
-- Introduced a probability field to allow for non-deterministic swaps.
-- Added a `remove` shorthand to rules to easily clear blocks without manually defining `minecraft:air` as the output.
+- Added `output_state_properties` to replacement rules, allowing you to enforce specific properties on the output
+  block (e.g., forcing `axis=y` for vertical logs).
+- Added `randomize_properties` to replacement rules, enabling randomization of block properties (e.g., randomizing
+  rotation or facing direction).
+- Added tag support for inputs (e.g. `#minecraft:logs`).
+- Added the `self`/`this` keyword to the output field to allow modifying the properties of the original block
+  without changing its type.
+- Added smart defaults in the output field: if output is omitted, the mod now assumes a 1-to-1 mapping.
