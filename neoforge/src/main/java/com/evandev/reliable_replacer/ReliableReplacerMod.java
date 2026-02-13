@@ -1,15 +1,15 @@
 package com.evandev.reliable_replacer;
 
 import com.evandev.reliable_replacer.client.ClientConfigSetup;
+import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.logic.RuleManager;
-import com.evandev.reliable_replacer.systems.ReloadListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
@@ -19,10 +19,10 @@ public class ReliableReplacerMod {
     public ReliableReplacerMod(IEventBus modEventBus) {
         modEventBus.addListener(this::commonSetup);
 
-        IEventBus forgeBus = NeoForge.EVENT_BUS;
-        forgeBus.addListener(this::addReloadListener);
-        forgeBus.addListener(this::onServerAboutToStart);
-        forgeBus.addListener(this::onServerStopped);
+        IEventBus neoBus = NeoForge.EVENT_BUS;
+        neoBus.addListener(this::onTagsUpdated);
+        neoBus.addListener(this::onServerAboutToStart);
+        neoBus.addListener(this::onServerStopped);
 
         if (FMLEnvironment.dist.isClient()) {
             ClientConfigSetup.register(ModLoadingContext.get().getActiveContainer());
@@ -35,14 +35,16 @@ public class ReliableReplacerMod {
 
     private void onServerAboutToStart(ServerAboutToStartEvent event) {
         CommonClass.setServer(event.getServer());
-        RuleManager.load(event.getServer());
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         CommonClass.setServer(null);
     }
 
-    private void addReloadListener(final AddReloadListenerEvent event) {
-        event.addListener(new ReloadListener());
+    private void onTagsUpdated(TagsUpdatedEvent event) {
+        if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) {
+            ModConfig.load();
+            RuleManager.load(CommonClass.getServer());
+        }
     }
 }
