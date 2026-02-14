@@ -1,9 +1,9 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
-import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.config.ModConfig;
-import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.data.ReplacementResult;
+import com.evandev.reliable_replacer.logic.RuleManager;
+import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -35,12 +35,26 @@ public abstract class LevelMixin {
 
         if (result != null) {
             BlockState replacement = result.state();
+            boolean hasAdditionalBlocks = result.additionalBlocks() != null && !result.additionalBlocks().isEmpty();
 
-            if (!replacement.equals(state)) {
+            if (!replacement.equals(state) || hasAdditionalBlocks) {
                 reliableReplacer$isReplacing.set(true);
                 try {
-                    boolean success = BlockUtil.swapBlockWithNbt(level, pos, result, flags);
-                    cir.setReturnValue(success);
+                    boolean success = false;
+                    if (!replacement.equals(state)) {
+                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), flags);
+                    }
+
+                    if (hasAdditionalBlocks) {
+                        for (var entry : result.additionalBlocks().entrySet()) {
+                            level.setBlock(entry.getKey(), entry.getValue(), flags);
+                        }
+                        if (replacement.equals(state)) success = true;
+                    }
+
+                    if (success) {
+                        cir.setReturnValue(true);
+                    }
                 } finally {
                     reliableReplacer$isReplacing.set(false);
                 }

@@ -1,11 +1,11 @@
 package com.evandev.reliable_replacer.systems;
 
 import com.evandev.reliable_replacer.api.IProcessedChunk;
-import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.config.ModConfig;
+import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.logic.ChunkRuleCache;
 import com.evandev.reliable_replacer.logic.RuleManager;
-import com.evandev.reliable_replacer.data.ReplacementResult;
+import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelData;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetrogenHandler {
@@ -32,16 +34,30 @@ public class RetrogenHandler {
         LiveReplacementContext ctx = new LiveReplacementContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk, cache);
 
         AtomicBoolean changed = new AtomicBoolean(false);
+        Set<BlockPos> modifiedPositions = new HashSet<>();
 
         BlockUtil.processChunkBlocks(chunk, (pos, original) -> {
+            if (modifiedPositions.contains(pos)) return;
+
             ctx.setPos(pos);
             ReplacementResult result = RuleManager.getReplacementResult(original, ctx, false);
 
             if (result != null) {
                 BlockState replacement = result.state();
                 if (replacement != original) {
-                    BlockUtil.swapBlockWithNbt(level, pos, result, 3);
+                    BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), 3);
                     changed.set(true);
+                    modifiedPositions.add(pos.immutable());
+                }
+
+                if (result.additionalBlocks() != null && !result.additionalBlocks().isEmpty()) {
+                    for (var entry : result.additionalBlocks().entrySet()) {
+                        BlockPos addPos = entry.getKey();
+                        BlockState addState = entry.getValue();
+                        level.setBlock(addPos, addState, 3);
+                        changed.set(true);
+                        modifiedPositions.add(addPos.immutable());
+                    }
                 }
             }
         });

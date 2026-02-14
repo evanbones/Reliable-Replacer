@@ -18,6 +18,9 @@ public class ReplacementRule {
     public String output;
     public List<String> outputs = new ArrayList<>();
 
+    @SerializedName("additional_blocks")
+    public List<AdditionalBlock> additionalBlocks = new ArrayList<>();
+
     public Set<String> biomes = new HashSet<>();
     public Set<String> dimensions = new HashSet<>();
     public Set<String> structures = new HashSet<>();
@@ -76,11 +79,6 @@ public class ReplacementRule {
     private transient Set<Block> inputBlocks;
     private transient boolean isOutputSelf = false;
 
-    /**
-     * Returns the output block.
-     *
-     * @return The block to place, or NULL if the output is "Self" (keep original).
-     */
     @Nullable
     public List<Block> getOutputBlocks() {
         if (outputBlocks == null && !isOutputSelf) {
@@ -146,6 +144,8 @@ public class ReplacementRule {
                 ResourceLocation rl = ResourceLocation.tryParse(id);
                 if (rl != null && BuiltInRegistries.BLOCK.containsKey(rl)) {
                     inputBlocks.add(BuiltInRegistries.BLOCK.get(rl));
+                } else {
+                    Constants.LOG.warn("Reliable Replacer: Could not find block '{}' in the registry. It will be ignored.", id);
                 }
             }
         }
@@ -176,6 +176,11 @@ public class ReplacementRule {
         parseToCache(maxZ, v -> cachedMaxZ = v, v -> cachedMaxZOffset = v);
 
         if (not != null) not.resolveBlocks();
+        if (additionalBlocks != null) {
+            for (AdditionalBlock ab : additionalBlocks) {
+                ab.getOutputBlocks();
+            }
+        }
     }
 
     public boolean shouldRunRetrogen() {

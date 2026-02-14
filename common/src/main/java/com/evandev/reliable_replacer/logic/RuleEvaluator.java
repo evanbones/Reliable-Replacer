@@ -21,7 +21,8 @@ public class RuleEvaluator {
 
         // Probability Check
         if (rule.probability != null) {
-            long seed = ctx.getPos().asLong();
+            BlockPos pos = ctx.getPos();
+            long seed = pos.getX() * 3129871L ^ pos.getY() * 116129781L ^ pos.getZ() * 3812423L;
             float rng = new Random(seed).nextFloat();
             if (rng > rule.probability) return false;
         }

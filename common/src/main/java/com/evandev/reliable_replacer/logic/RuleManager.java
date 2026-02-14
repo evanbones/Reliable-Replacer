@@ -4,6 +4,7 @@ import com.evandev.reliable_replacer.Constants;
 import com.evandev.reliable_replacer.api.IProcessedChunk;
 import com.evandev.reliable_replacer.api.IReplacementContext;
 import com.evandev.reliable_replacer.config.ModConfig;
+import com.evandev.reliable_replacer.data.AdditionalBlock;
 import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
@@ -134,11 +135,26 @@ public class RuleManager {
             if (rule.not != null && RuleEvaluator.checkRule(rule.not, original, ctx)) continue;
 
             BlockState replacement = createReplacementState(original, rule, ctx.getPos());
-            if (replacement.equals(original)) {
+
+            Map<BlockPos, BlockState> additionalBlocksMap = new HashMap<>();
+            if (rule.additionalBlocks != null && !rule.additionalBlocks.isEmpty()) {
+                BlockPos pos = ctx.getPos();
+                long seed = pos.getX() * 3129871L ^ pos.getY() * 116129781L ^ pos.getZ() * 3812423L;
+                Random rand = new Random(seed);
+                for (AdditionalBlock addBlock : rule.additionalBlocks) {
+                    BlockPos offsetPos = ctx.getPos().offset(addBlock.xOffset, addBlock.yOffset, addBlock.zOffset);
+                    BlockState addState = createAdditionalReplacementState(original, addBlock, rand);
+                    if (addState != null) {
+                        additionalBlocksMap.put(offsetPos, addState);
+                    }
+                }
+            }
+
+            if (replacement.equals(original) && additionalBlocksMap.isEmpty()) {
                 return null;
             }
 
-            return new ReplacementResult(replacement, rule.keepNbt);
+            return new ReplacementResult(replacement, rule.keepNbt, additionalBlocksMap);
         }
 
         return null;
@@ -197,8 +213,54 @@ public class RuleManager {
         return newState;
     }
 
-    private static <T extends Comparable<T>> BlockState copyProperty(BlockState from, BlockState to, Property<T> property) {
-        return to.setValue(property, from.getValue(property));
+    private static BlockState createAdditionalReplacementState(BlockState original, AdditionalBlock addBlock, Random rand) {
+        List<Block> outputBlocks = addBlock.getOutputBlocks();
+        Block outputBlock;
+
+        if (outputBlocks == null || outputBlocks.isEmpty()) {
+            outputBlock = original.getBlock();
+        } else {
+            outputBlock = outputBlocks.get(rand.nextInt(outputBlocks.size()));
+        }
+
+        BlockState newState = outputBlock.defaultBlockState();
+
+        if (addBlock.outputStateProperties != null && !addBlock.outputStateProperties.isEmpty()) {
+            for (Map.Entry<String, String> entry : addBlock.outputStateProperties.entrySet()) {
+                Property<?> prop = outputBlock.getStateDefinition().getProperty(entry.getKey());
+                if (prop != null) {
+                    newState = setPropertyFromString(newState, prop, entry.getValue());
+                }
+            }
+        }
+
+        if (addBlock.randomizeProperties != null && !addBlock.randomizeProperties.isEmpty()) {
+            for (String propName : addBlock.randomizeProperties) {
+                Property<?> prop = outputBlock.getStateDefinition().getProperty(propName);
+                if (prop != null) {
+                    newState = randomizeProperty(newState, prop, rand);
+                }
+            }
+        }
+
+        return newState;
+    }
+
+    private static <T extends Comparable<T>> BlockState copyProperty(BlockState from, BlockState to, Property<T> targetProperty) {
+        for (Property<?> originalProp : from.getProperties()) {
+            if (originalProp.getName().equals(targetProperty.getName())) {
+                try {
+                    String valueString = from.getValue(originalProp).toString();
+                    Optional<T> parsedValue = targetProperty.getValue(valueString);
+
+                    if (parsedValue.isPresent()) {
+                        return to.setValue(targetProperty, parsedValue.get());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return to;
     }
 
     private static <T extends Comparable<T>> BlockState setPropertyFromString(BlockState state, Property<T> property, String valueStr) {
@@ -254,6 +316,19 @@ public class RuleManager {
                      "output_state_properties": {
                          "axis": "y"
                      },
+                    \s
+                     "_comment_multiblock": "MULTI-BLOCK: Place secondary blocks (like the top half of a door or clearing the top half of tall grass)",
+                     "additional_blocks": [
+                       {
+                         "output": "minecraft:mossy_cobblestone",
+                         "x_offset": 0,
+                         "y_offset": 1,
+                         "z_offset": 0,
+                         "output_state_properties": {
+                             "half": "upper"
+                         }
+                       }
+                     ],
                     \s
                      "_comment_random": "RANDOMIZATION: Randomly rotate the output block",
                      "randomize_properties": [

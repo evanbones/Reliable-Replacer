@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-02-14
+
+### Fixed
+
+- Fixed intial worldgen replacement sometimes missing blocks.
+- Fixed randomization affecting all vertically stacked blocks.
+
+### Added
+
+- Added `additional_blocks` to rules for placing or removing multi-block structures (like doors, beds, or tall grass) at
+  specific offsets.
+- Added logging for missing block IDs in replacement rules.
+
 ## [1.2.1] - 2026-02-13
 
 ### Added
