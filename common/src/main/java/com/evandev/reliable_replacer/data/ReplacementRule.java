@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 public class ReplacementRule {
     public Set<String> inputs = new HashSet<>();
     public String output;
+    public List<String> outputs = new ArrayList<>();
 
     public Set<String> biomes = new HashSet<>();
     public Set<String> dimensions = new HashSet<>();
@@ -71,7 +72,7 @@ public class ReplacementRule {
     public transient Set<ResourceLocation> parsedBiomes;
     public transient Set<ResourceLocation> parsedDimensions;
     public transient Set<ResourceLocation> parsedStructures;
-    private transient Block outputBlock;
+    private transient List<Block> outputBlocks;
     private transient Set<Block> inputBlocks;
     private transient boolean isOutputSelf = false;
 
@@ -81,22 +82,41 @@ public class ReplacementRule {
      * @return The block to place, or NULL if the output is "Self" (keep original).
      */
     @Nullable
-    public Block getOutputBlock() {
-        if (outputBlock == null && !isOutputSelf) {
+    public List<Block> getOutputBlocks() {
+        if (outputBlocks == null && !isOutputSelf) {
             if (remove) {
-                outputBlock = Blocks.AIR;
-            } else if (output == null) {
-                isOutputSelf = true;
-                return null;
-            } else if (output.equalsIgnoreCase("self") || output.equalsIgnoreCase("this")) {
-                isOutputSelf = true;
-                return null;
+                outputBlocks = List.of(Blocks.AIR);
             } else {
-                ResourceLocation id = ResourceLocation.tryParse(output);
-                outputBlock = id != null ? BuiltInRegistries.BLOCK.get(id) : Blocks.AIR;
+                List<String> combinedOutputs = new ArrayList<>();
+                if (output != null) combinedOutputs.add(output);
+                if (outputs != null && !outputs.isEmpty()) combinedOutputs.addAll(outputs);
+
+                if (combinedOutputs.isEmpty()) {
+                    isOutputSelf = true;
+                    return null;
+                }
+
+                boolean isSelf = false;
+                for (String out : combinedOutputs) {
+                    if (out.equalsIgnoreCase("self") || out.equalsIgnoreCase("this")) {
+                        isSelf = true;
+                        break;
+                    }
+                }
+
+                if (isSelf) {
+                    isOutputSelf = true;
+                    return null;
+                } else {
+                    outputBlocks = new ArrayList<>();
+                    for (String outStr : combinedOutputs) {
+                        ResourceLocation id = ResourceLocation.tryParse(outStr);
+                        outputBlocks.add(id != null ? BuiltInRegistries.BLOCK.get(id) : Blocks.AIR);
+                    }
+                }
             }
         }
-        return outputBlock;
+        return outputBlocks;
     }
 
     public Set<Block> getInputBlocks() {

@@ -126,9 +126,7 @@ public class RuleManager {
             return null;
         }
 
-        for (int i = 0; i < candidates.size(); i++) {
-            ReplacementRule rule = candidates.get(i);
-
+        for (ReplacementRule rule : candidates) {
             if (ctx.isRetrogen() && !rule.shouldRunRetrogen()) continue;
             if (isLivePlacement && !rule.shouldRunPlayerBlocks()) continue;
 
@@ -147,10 +145,18 @@ public class RuleManager {
     }
 
     private static BlockState createReplacementState(BlockState original, ReplacementRule rule, BlockPos pos) {
-        Block outputBlock = rule.getOutputBlock();
-        if (outputBlock == null) {
+        long seed = pos.asLong();
+        Random rand = new Random(seed);
+
+        List<Block> outputBlocks = rule.getOutputBlocks();
+        Block outputBlock;
+
+        if (outputBlocks == null || outputBlocks.isEmpty()) {
             outputBlock = original.getBlock();
+        } else {
+            outputBlock = outputBlocks.get(rand.nextInt(outputBlocks.size()));
         }
+
         BlockState newState = outputBlock.defaultBlockState();
 
         if (rule.keepStates) {
@@ -180,9 +186,6 @@ public class RuleManager {
         }
 
         if (rule.randomizeProperties != null && !rule.randomizeProperties.isEmpty()) {
-            long seed = pos.asLong();
-            Random rand = new Random(seed);
-
             for (String propName : rule.randomizeProperties) {
                 Property<?> prop = outputBlock.getStateDefinition().getProperty(propName);
                 if (prop != null) {
