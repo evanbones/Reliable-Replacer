@@ -1,6 +1,5 @@
 package com.evandev.reliable_replacer.test;
 
-import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -19,9 +18,15 @@ public class NbtTest {
         helper.setBlock(pos, Blocks.CHEST);
         RandomizableContainerBlockEntity chest = (RandomizableContainerBlockEntity) helper.getBlockEntity(pos);
         chest.setItem(0, new ItemStack(Items.DIAMOND));
-        ReplacementResult result = new ReplacementResult(Blocks.BARREL.defaultBlockState(), true);
 
-        boolean success = BlockUtil.swapBlockWithNbt(helper.getLevel(), helper.absolutePos(pos), result, 3);
+        boolean success = BlockUtil.swapBlockWithNbt(
+                helper.getLevel(),
+                helper.absolutePos(pos),
+                Blocks.BARREL.defaultBlockState(),
+                true,
+                3
+        );
+
         if (!success) helper.fail("Block swap returned false");
         helper.assertBlockState(pos, state -> state.is(Blocks.BARREL), () -> "Block did not change to Barrel");
 

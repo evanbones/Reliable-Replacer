@@ -6,6 +6,7 @@ hide_meta: true
 ### Probabilistic Replacement
 
 Adds a 30% chance for any Stone block to become Mossy Cobblestone.
+
 ```json
 {
   "inputs": ["minecraft:stone"],
@@ -13,6 +14,31 @@ Adds a 30% chance for any Stone block to become Mossy Cobblestone.
   "probability": 0.3
 }
 
+```
+
+### Multi-Block Placement (Doors, Tall Grass, Beds)
+
+When placing or removing multi-block structures like doors or tall grass, use `additional_blocks` to specify the secondary blocks at relative offsets. This example replaces a Dandelion with a Rose Bush, placing the lower half at the original location and the upper half exactly 1 block above it.
+
+```json
+{
+  "inputs": ["minecraft:dandelion"],
+  "output": "minecraft:rose_bush",
+  "output_state_properties": {
+    "half": "lower"
+  },
+  "additional_blocks": [
+    {
+      "output": "minecraft:rose_bush",
+      "x_offset": 0,
+      "y_offset": 1,
+      "z_offset": 0,
+      "output_state_properties": {
+        "half": "upper"
+      }
+    }
+  ]
+}
 
 ```
 
@@ -61,8 +87,7 @@ Replaces Coarse Dirt with Grass Block, but only if there is Air directly above i
 
 ### Block State Filtering
 
-Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the
-bottom half (or other flowers) alone.
+Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the bottom half (or other flowers) alone.
 
 ```json
 {
@@ -106,8 +131,7 @@ Replace Cobblestone with Mossy Cobblestone, but only inside Jungle Temples.
 
 ### Inverted Conditions (Not)
 
-You can use the `not` field to apply a rule everywhere **except** in specific conditions.
-This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
+You can use the `not` field to apply a rule everywhere **except** in specific conditions. This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
 
 ```json
 {
@@ -122,8 +146,7 @@ This example replaces Grass Blocks with Podzol everywhere, **except** in the Pla
 
 ### Random Output Selection
 
-You can specify a list of outputs to randomly choose from. This is useful for adding visual variation or handling cases
-where variants are split into different block IDs (rather than block states).
+You can specify a list of outputs to randomly choose from. This is useful for adding visual variation or handling cases where variants are split into different block IDs (rather than block states).
 
 ```json
 {

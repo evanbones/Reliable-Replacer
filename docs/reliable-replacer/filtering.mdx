@@ -25,6 +25,21 @@ You can further control the properties of the placed block using these fields.
 | `output_state_properties` | Map\<String, String\> | Force specific properties on the output block (e.g., `{"axis": "y"}`). Overrides `keep_states`. |
 | `randomize_properties` | List\<String\> | A list of properties to randomize (e.g., `["facing", "rotation"]`). Deterministic based on position. |
 
+### Multi-Block Structures
+
+Use the `additional_blocks` field to place or remove secondary blocks at specific offsets relative to the main block.
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_blocks` | List\<Object\> | A list of offset block definitions to apply alongside the main replacement. |
+
+**Additional Block Object properties:**
+* `output` / `outputs`: The block ID(s) to place at the offset.
+* `remove`: Boolean. If `true`, explicitly sets the offset block to Air.
+* `x_offset`, `y_offset`, `z_offset`: Integers representing the coordinate offset relative to the original block (Default `0`).
+* `output_state_properties`: A Map to force specific properties on this offset block.
+* `randomize_properties`: A List of properties to randomize for this offset block.
+
 ### World Conditions
 
 | Field | Type | Description |
