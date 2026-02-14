@@ -12,6 +12,7 @@ If a field is omitted, that specific condition is ignored (i.e., it matches ever
 | :--- | :--- | :--- |
 | `inputs` | List\<String\> | A list of block IDs, namespaces, or tags to replace.<br/>**Specific:** `"minecraft:stone"`<br/>**Wildcard:** `"modid:*"`<br/>**Tags:** `"#minecraft:logs"` |
 | `output` | String | The block ID to place instead.<br/>Defaults to original block if omitted. |
+| `outputs` | List\<String\> | A list of possible block IDs to randomly choose from. If used, the replacement will be randomly selected from this list. |
 | `remove` | Boolean | If `true`, the block is explicitly replaced with Air. Overrides `output`. |
 | `keep_states` | Boolean | If `true`, attempts to copy shared properties (rotation, waterlogging, etc.) to the new block. Default: `true`. See [State Retention](#state-retention) for details. |
 

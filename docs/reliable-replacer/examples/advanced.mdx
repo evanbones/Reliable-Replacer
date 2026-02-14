@@ -61,7 +61,8 @@ Replaces Coarse Dirt with Grass Block, but only if there is Air directly above i
 
 ### Block State Filtering
 
-Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the bottom half (or other flowers) alone.
+Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the
+bottom half (or other flowers) alone.
 
 ```json
 {
@@ -115,6 +116,23 @@ This example replaces Grass Blocks with Podzol everywhere, **except** in the Pla
   "not": {
     "biomes": ["minecraft:plains"]
   }
+}
+
+```
+
+### Random Output Selection
+
+You can specify a list of outputs to randomly choose from. This is useful for adding visual variation or handling cases
+where variants are split into different block IDs (rather than block states).
+
+```json
+{
+  "inputs": ["minecraft:wool"],
+  "outputs": [
+    "minecraft:red_wool",
+    "minecraft:blue_wool",
+    "minecraft:green_wool"
+  ]
 }
 
 ```
