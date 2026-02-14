@@ -9,7 +9,6 @@
     "minecraft.ChunkGeneratorMixin",
     "minecraft.ChunkMapAccessor",
     "minecraft.ChunkSerializerMixin",
-    "minecraft.LevelChunkMixin",
     "minecraft.LevelMixin",
     "minecraft.MinecraftServerMixin",
     "minecraft.ServerLevelMixin",

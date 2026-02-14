@@ -1,10 +1,10 @@
 package com.evandev.reliable_replacer.util;
 
-import com.evandev.reliable_replacer.data.ReplacementResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -46,11 +46,10 @@ public class BlockUtil {
     /**
      * Replaces a block in the level, optionally preserving NBT data.
      */
-    public static boolean swapBlockWithNbt(Level level, BlockPos pos, ReplacementResult result, int flags) {
+    public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, int flags) {
         CompoundTag nbtData = null;
-        BlockState replacement = result.state();
 
-        if (result.keepNbt()) {
+        if (keepNbt) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be != null) {
                 nbtData = be.saveWithoutMetadata();
@@ -67,5 +66,21 @@ public class BlockUtil {
         }
 
         return success;
+    }
+
+    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state) {
+        int cx = pos.getX() >> 4;
+        int cz = pos.getZ() >> 4;
+
+        // Prevents out-of-bounds cross-chunk writing deadlocks
+        if (cx == currentChunk.getPos().x && cz == currentChunk.getPos().z) {
+            currentChunk.setBlockState(pos, state, false);
+        } else {
+            try {
+                level.setBlock(pos, state, 2);
+            } catch (Exception ignored) {
+                // Ignore if offset is pushed out to unloaded chunks during generation bounds
+            }
+        }
     }
 }
