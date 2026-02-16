@@ -43,10 +43,7 @@ public class BlockUtil {
         }
     }
 
-    /**
-     * Replaces a block in the level, optionally preserving NBT data.
-     */
-    public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, int flags) {
+    public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, CompoundTag customNbt, int flags) {
         CompoundTag nbtData = null;
 
         if (keepNbt) {
@@ -56,28 +53,89 @@ public class BlockUtil {
             }
         }
 
-        boolean success = level.setBlock(pos, replacement, flags);
+        boolean success;
+        BlockState currentState = level.getBlockState(pos);
 
-        if (success && nbtData != null) {
+        if (currentState.equals(replacement)) {
+            success = true;
+        } else {
+            success = level.setBlock(pos, replacement, flags);
+        }
+
+        if (success && (nbtData != null || customNbt != null)) {
             BlockEntity newBlockEntity = level.getBlockEntity(pos);
             if (newBlockEntity != null) {
-                newBlockEntity.loadWithComponents(nbtData, level.registryAccess());
+                CompoundTag finalNbt = newBlockEntity.saveWithoutMetadata(level.registryAccess());
+                if (nbtData != null) {
+                    nbtData.remove("id");
+                    nbtData.remove("x");
+                    nbtData.remove("y");
+                    nbtData.remove("z");
+                    finalNbt.merge(nbtData);
+                }
+                if (customNbt != null) {
+                    CompoundTag customCopy = customNbt.copy();
+                    customCopy.remove("id");
+                    customCopy.remove("x");
+                    customCopy.remove("y");
+                    customCopy.remove("z");
+                    finalNbt.merge(customCopy);
+                }
+                newBlockEntity.loadWithComponents(finalNbt, level.registryAccess());
+                newBlockEntity.setChanged();
+
+                level.sendBlockUpdated(pos, currentState, replacement, flags);
             }
         }
 
         return success;
     }
 
-    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state) {
+    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, CompoundTag customNbt) {
         int cx = pos.getX() >> 4;
         int cz = pos.getZ() >> 4;
 
-        // Prevents out-of-bounds cross-chunk writing deadlocks
+        BlockState currentState = currentChunk.getBlockState(pos);
+        boolean stateChanged = !currentState.equals(state);
+
         if (cx == currentChunk.getPos().x && cz == currentChunk.getPos().z) {
-            currentChunk.setBlockState(pos, state, false);
+            if (stateChanged) {
+                currentChunk.setBlockState(pos, state, false);
+            }
+            if (customNbt != null) {
+                CompoundTag copy = customNbt.copy();
+                copy.putInt("x", pos.getX());
+                copy.putInt("y", pos.getY());
+                copy.putInt("z", pos.getZ());
+
+                BlockEntity be = currentChunk.getBlockEntity(pos);
+                if (be != null) {
+                    CompoundTag finalNbt = be.saveWithoutMetadata();
+                    copy.remove("id");
+                    finalNbt.merge(copy);
+                    be.load(finalNbt);
+                } else {
+                    currentChunk.setBlockEntityNbt(copy);
+                }
+            }
         } else {
             try {
-                level.setBlock(pos, state, 2);
+                if (stateChanged) {
+                    level.setBlock(pos, state, 2);
+                }
+                if (customNbt != null) {
+                    BlockEntity be = level.getBlockEntity(pos);
+                    if (be != null) {
+                        CompoundTag finalNbt = be.saveWithoutMetadata();
+                        CompoundTag copy = customNbt.copy();
+                        copy.remove("id");
+                        copy.remove("x");
+                        copy.remove("y");
+                        copy.remove("z");
+                        finalNbt.merge(copy);
+                        be.load(finalNbt);
+                    }
+                }
             } catch (Exception ignored) {
                 // Ignore if offset is pushed out to unloaded chunks during generation bounds
             }

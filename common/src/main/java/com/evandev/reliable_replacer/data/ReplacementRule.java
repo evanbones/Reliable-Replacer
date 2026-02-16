@@ -4,6 +4,8 @@ import com.evandev.reliable_replacer.Constants;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
@@ -18,12 +20,19 @@ public class ReplacementRule {
     public String output;
     public List<String> outputs = new ArrayList<>();
 
+    @SerializedName("output_nbt")
+    public String outputNbt;
+
+    @SerializedName("input_nbt")
+    public String inputNbt;
+
     @SerializedName("additional_blocks")
     public List<AdditionalBlock> additionalBlocks = new ArrayList<>();
 
     public Set<String> biomes = new HashSet<>();
     public Set<String> dimensions = new HashSet<>();
     public Set<String> structures = new HashSet<>();
+    public transient CompoundTag parsedInputNbt;
 
     @SerializedName("min_x")
     public String minX;
@@ -75,6 +84,7 @@ public class ReplacementRule {
     public transient Set<ResourceLocation> parsedBiomes;
     public transient Set<ResourceLocation> parsedDimensions;
     public transient Set<ResourceLocation> parsedStructures;
+    public transient CompoundTag parsedOutputNbt;
     private transient List<Block> outputBlocks;
     private transient Set<Block> inputBlocks;
     private transient boolean isOutputSelf = false;
@@ -167,6 +177,22 @@ public class ReplacementRule {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedStructures.add(rl);
         });
+
+        if (outputNbt != null && !outputNbt.trim().isEmpty()) {
+            try {
+                parsedOutputNbt = TagParser.parseTag(outputNbt);
+            } catch (Exception e) {
+                Constants.LOG.error("Reliable Replacer: Failed to parse output_nbt for rule: {}", outputNbt, e);
+            }
+        }
+
+        if (inputNbt != null && !inputNbt.trim().isEmpty()) {
+            try {
+                parsedInputNbt = TagParser.parseTag(inputNbt);
+            } catch (Exception e) {
+                Constants.LOG.error("Reliable Replacer: Failed to parse input_nbt for rule: {}", inputNbt, e);
+            }
+        }
 
         parseToCache(minX, v -> cachedMinX = v, v -> cachedMinXOffset = v);
         parseToCache(maxX, v -> cachedMaxX = v, v -> cachedMaxXOffset = v);

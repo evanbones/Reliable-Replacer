@@ -2,6 +2,8 @@ package com.evandev.reliable_replacer.data;
 
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -15,6 +17,8 @@ import java.util.Map;
 public class AdditionalBlock {
     public String output;
     public List<String> outputs = new ArrayList<>();
+    @SerializedName("output_nbt")
+    public String outputNbt;
     @SerializedName("x_offset")
     public int xOffset = 0;
     @SerializedName("y_offset")
@@ -28,7 +32,23 @@ public class AdditionalBlock {
     public boolean remove = false;
 
     private transient List<Block> outputBlocks;
+    private transient CompoundTag parsedOutputNbt;
+    private transient boolean nbtParsed = false;
     private transient boolean isOutputSelf = false;
+
+    @Nullable
+    public CompoundTag getParsedOutputNbt() {
+        if (!nbtParsed) {
+            nbtParsed = true;
+            if (outputNbt != null && !outputNbt.trim().isEmpty()) {
+                try {
+                    parsedOutputNbt = TagParser.parseTag(outputNbt);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return parsedOutputNbt;
+    }
 
     @Nullable
     public List<Block> getOutputBlocks() {

@@ -8,6 +8,7 @@ import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,8 +44,9 @@ public class WorldgenHandler {
 
             if (result != null) {
                 BlockState replacement = result.state();
-                if (replacement != original) {
-                    BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement);
+                boolean hasCustomNbt = result.customNbt() != null;
+                if (replacement != original || hasCustomNbt) {
+                    BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement, result.customNbt());
                     modifiedPositions.add(pos.immutable());
                 }
 
@@ -52,7 +54,8 @@ public class WorldgenHandler {
                     for (var entry : result.additionalBlocks().entrySet()) {
                         BlockPos addPos = entry.getKey();
                         BlockState addState = entry.getValue();
-                        BlockUtil.safeSetBlock(levelAccessor, chunk, addPos, addState);
+                        CompoundTag addNbt = result.additionalNbt().get(addPos);
+                        BlockUtil.safeSetBlock(levelAccessor, chunk, addPos, addState, addNbt);
                         modifiedPositions.add(addPos.immutable());
                     }
                 }

@@ -8,6 +8,7 @@ import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -44,8 +45,9 @@ public class RetrogenHandler {
 
             if (result != null) {
                 BlockState replacement = result.state();
-                if (replacement != original) {
-                    BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), 3);
+                boolean hasCustomNbt = result.customNbt() != null;
+                if (replacement != original || hasCustomNbt) {
+                    BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), 3);
                     changed.set(true);
                     modifiedPositions.add(pos.immutable());
                 }
@@ -54,7 +56,8 @@ public class RetrogenHandler {
                     for (var entry : result.additionalBlocks().entrySet()) {
                         BlockPos addPos = entry.getKey();
                         BlockState addState = entry.getValue();
-                        level.setBlock(addPos, addState, 3);
+                        CompoundTag addNbt = result.additionalNbt().get(addPos);
+                        BlockUtil.swapBlockWithNbt(level, addPos, addState, false, addNbt, 3);
                         changed.set(true);
                         modifiedPositions.add(addPos.immutable());
                     }

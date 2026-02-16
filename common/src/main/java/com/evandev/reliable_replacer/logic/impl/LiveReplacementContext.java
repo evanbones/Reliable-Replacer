@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -88,6 +90,22 @@ public class LiveReplacementContext implements IReplacementContext {
             dimIdComputed = true;
         }
         return cachedDimId;
+    }
+
+    @Override
+    @Nullable
+    public CompoundTag getBlockEntityNbt(BlockPos targetPos) {
+        if (chunk != null) {
+            BlockEntity be = chunk.getBlockEntity(targetPos);
+            if (be != null) return be.saveWithoutMetadata();
+
+            // Fallback for chunks during generation that have deferred NBT
+            return chunk.getBlockEntityNbtForSaving(targetPos);
+        } else {
+            BlockEntity be = level.getBlockEntity(targetPos);
+            if (be != null) return be.saveWithoutMetadata();
+            return null;
+        }
     }
 
     @Override

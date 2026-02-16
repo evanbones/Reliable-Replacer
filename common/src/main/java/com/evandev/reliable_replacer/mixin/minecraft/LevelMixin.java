@@ -6,6 +6,7 @@ import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.LevelData;
@@ -36,20 +37,23 @@ public abstract class LevelMixin {
         if (result != null) {
             BlockState replacement = result.state();
             boolean hasAdditionalBlocks = result.additionalBlocks() != null && !result.additionalBlocks().isEmpty();
+            boolean hasCustomNbt = result.customNbt() != null;
 
-            if (!replacement.equals(state) || hasAdditionalBlocks) {
+            if (!replacement.equals(state) || hasAdditionalBlocks || hasCustomNbt) {
                 reliableReplacer$isReplacing.set(true);
                 try {
                     boolean success = false;
-                    if (!replacement.equals(state)) {
-                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), flags);
+                    if (!replacement.equals(state) || hasCustomNbt) {
+                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), flags);
                     }
 
                     if (hasAdditionalBlocks) {
                         for (var entry : result.additionalBlocks().entrySet()) {
-                            level.setBlock(entry.getKey(), entry.getValue(), flags);
+                            BlockPos addPos = entry.getKey();
+                            CompoundTag addNbt = result.additionalNbt().get(addPos);
+                            BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, flags);
                         }
-                        if (replacement.equals(state)) success = true;
+                        if (replacement.equals(state) && !hasCustomNbt) success = true;
                     }
 
                     if (success) {
