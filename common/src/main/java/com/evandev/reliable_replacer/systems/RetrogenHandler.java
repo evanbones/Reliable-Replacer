@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.storage.LevelData;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,8 +27,7 @@ public class RetrogenHandler {
         }
 
         Level level = chunk.getLevel();
-        LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
+        BlockPos spawnPos = level.getSharedSpawnPos();
 
         ChunkRuleCache cache = new ChunkRuleCache(level, chunk.getPos());
         LiveReplacementContext ctx = new LiveReplacementContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk, cache);

@@ -12,7 +12,6 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.LevelData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,9 +27,7 @@ public class BlockItemMixin {
             BlockPos pos = context.getClickedPos();
             BlockState state = level.getBlockState(pos);
 
-            LevelData levelData = level.getLevelData();
-            BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
-
+            BlockPos spawnPos = level.getSharedSpawnPos();
             LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
             ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
 

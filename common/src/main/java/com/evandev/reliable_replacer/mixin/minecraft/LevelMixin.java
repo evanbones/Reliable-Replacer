@@ -9,7 +9,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.LevelData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,8 +28,7 @@ public abstract class LevelMixin {
         if (!ModConfig.get().enabled) return;
 
         Level level = (Level) (Object) this;
-        LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
+        BlockPos spawnPos = level.getSharedSpawnPos();
         LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
         ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
 

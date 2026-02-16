@@ -97,13 +97,13 @@ public class LiveReplacementContext implements IReplacementContext {
     public CompoundTag getBlockEntityNbt(BlockPos targetPos) {
         if (chunk != null) {
             BlockEntity be = chunk.getBlockEntity(targetPos);
-            if (be != null) return be.saveWithoutMetadata();
+            if (be != null) return be.saveWithoutMetadata(level.registryAccess());
 
             // Fallback for chunks during generation that have deferred NBT
-            return chunk.getBlockEntityNbtForSaving(targetPos);
+            return chunk.getBlockEntityNbtForSaving(targetPos, level.registryAccess());
         } else {
             BlockEntity be = level.getBlockEntity(targetPos);
-            if (be != null) return be.saveWithoutMetadata();
+            if (be != null) return be.saveWithoutMetadata(level.registryAccess());
             return null;
         }
     }

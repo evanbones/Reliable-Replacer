@@ -110,10 +110,10 @@ public class BlockUtil {
 
                 BlockEntity be = currentChunk.getBlockEntity(pos);
                 if (be != null) {
-                    CompoundTag finalNbt = be.saveWithoutMetadata();
+                    CompoundTag finalNbt = be.saveWithoutMetadata(level.registryAccess());
                     copy.remove("id");
                     finalNbt.merge(copy);
-                    be.load(finalNbt);
+                    be.loadWithComponents(finalNbt, level.registryAccess());
                 } else {
                     currentChunk.setBlockEntityNbt(copy);
                 }
@@ -126,14 +126,14 @@ public class BlockUtil {
                 if (customNbt != null) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
-                        CompoundTag finalNbt = be.saveWithoutMetadata();
+                        CompoundTag finalNbt = be.saveWithoutMetadata(level.registryAccess());
                         CompoundTag copy = customNbt.copy();
                         copy.remove("id");
                         copy.remove("x");
                         copy.remove("y");
                         copy.remove("z");
                         finalNbt.merge(copy);
-                        be.load(finalNbt);
+                        be.loadWithComponents(finalNbt, level.registryAccess());
                     }
                 }
             } catch (Exception ignored) {
