@@ -15,6 +15,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -137,6 +138,7 @@ public class RuleManager {
             BlockState replacement = createReplacementState(original, rule, ctx.getPos());
 
             Map<BlockPos, BlockState> additionalBlocksMap = new HashMap<>();
+            Map<BlockPos, CompoundTag> additionalNbtMap = new HashMap<>();
             if (rule.additionalBlocks != null && !rule.additionalBlocks.isEmpty()) {
                 BlockPos pos = ctx.getPos();
                 long seed = pos.getX() * 3129871L ^ pos.getY() * 116129781L ^ pos.getZ() * 3812423L;
@@ -146,15 +148,18 @@ public class RuleManager {
                     BlockState addState = createAdditionalReplacementState(original, addBlock, rand);
                     if (addState != null) {
                         additionalBlocksMap.put(offsetPos, addState);
+                        if (addBlock.getParsedOutputNbt() != null) {
+                            additionalNbtMap.put(offsetPos, addBlock.getParsedOutputNbt());
+                        }
                     }
                 }
             }
 
-            if (replacement.equals(original) && additionalBlocksMap.isEmpty()) {
+            if (replacement.equals(original) && additionalBlocksMap.isEmpty() && rule.parsedOutputNbt == null) {
                 return null;
             }
 
-            return new ReplacementResult(replacement, rule.keepNbt, additionalBlocksMap);
+            return new ReplacementResult(replacement, rule.keepNbt, rule.parsedOutputNbt, additionalBlocksMap, additionalNbtMap);
         }
 
         return null;
@@ -293,6 +298,12 @@ public class RuleManager {
                      "player_blocks": true,
                      "keep_nbt": true,
                      "probability": 0.5,
+                \s
+                    "_comment_input_nbt": "INPUT NBT: Only replace if the block entity has this NBT data (e.g., target blaze spawners)",
+                    "input_nbt": "{SpawnData:{entity:{id:\\"minecraft:blaze\\"}}}",
+                \s
+                     "_comment_output_nbt": "NBT DATA: Add custom NBT to the output block",
+                     "output_nbt": "{SpawnData:{entity:{id:\\"minecraft:zombie\\"}}}",
                 \s
                      "_comment_filters": "FILTERS: The rule only runs if ALL these match.",
                      "biomes": [

@@ -6,6 +6,8 @@ import com.evandev.reliable_replacer.data.ReplacementRule;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -34,6 +36,14 @@ public class RuleEvaluator {
                 if (prop == null) return false;
                 String actualValue = original.getValue(prop).toString();
                 if (!actualValue.equals(entry.getValue())) return false;
+            }
+        }
+
+        // Input NBT Check
+        if (rule.parsedInputNbt != null) {
+            CompoundTag actualNbt = ctx.getBlockEntityNbt(ctx.getPos());
+            if (actualNbt == null || !NbtUtils.compareNbt(rule.parsedInputNbt, actualNbt, true)) {
+                return false;
             }
         }
 
