@@ -4,9 +4,11 @@ import com.evandev.reliable_replacer.api.IReplacementContext;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +24,7 @@ public class MockReplacementContext implements IReplacementContext {
     private ResourceLocation biomeId = new ResourceLocation("minecraft:plains");
     private ResourceLocation dimensionId = new ResourceLocation("minecraft:overworld");
     private boolean isRetrogen = false;
+    private CompoundTag mockNbt = null;
 
     public MockReplacementContext setPos(int x, int y, int z) {
         this.pos = new BlockPos(x, y, z);
@@ -51,6 +54,17 @@ public class MockReplacementContext implements IReplacementContext {
     public MockReplacementContext setNeighbor(Direction dir, BlockState state) {
         this.neighbors.put(dir, state);
         return this;
+    }
+
+    public MockReplacementContext setMockNbt(CompoundTag tag) {
+        this.mockNbt = tag;
+        return this;
+    }
+
+    @Override
+    @Nullable
+    public CompoundTag getBlockEntityNbt(BlockPos targetPos) {
+        return mockNbt;
     }
 
     @Override

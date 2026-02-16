@@ -3,6 +3,21 @@ title: Advanced Replacements
 hide_meta: true
 ---
 
+### Replacing Blocks with NBT Data
+
+You can replace blocks and assign them specific NBT block entity data. This is useful for changing Spawners, Chests, or Command Blocks.
+This example replaces any Blaze Spawner with a Zombie Spawner.
+
+```json
+{
+  "inputs": ["minecraft:spawner"],
+  "input_nbt": "{SpawnData:{entity:{id:\"minecraft:blaze\"}}}",
+  "output": "minecraft:spawner",
+  "output_nbt": "{SpawnData:{entity:{id:\"minecraft:zombie\"}}}"
+}
+
+```
+
 ### Probabilistic Replacement
 
 Adds a 30% chance for any Stone block to become Mossy Cobblestone.
@@ -18,7 +33,8 @@ Adds a 30% chance for any Stone block to become Mossy Cobblestone.
 
 ### Multi-Block Placement (Doors, Tall Grass, Beds)
 
-When placing or removing multi-block structures like doors or tall grass, use `additional_blocks` to specify the secondary blocks at relative offsets. This example replaces a Dandelion with a Rose Bush, placing the lower half at the original location and the upper half exactly 1 block above it.
+When placing or removing multi-block structures like doors or tall grass, use `additional_blocks` to specify the secondary blocks at relative offsets.
+This example replaces a Dandelion with a Rose Bush, placing the lower half at the original location and the upper half exactly 1 block above it.
 
 ```json
 {
@@ -131,7 +147,8 @@ Replace Cobblestone with Mossy Cobblestone, but only inside Jungle Temples.
 
 ### Inverted Conditions (Not)
 
-You can use the `not` field to apply a rule everywhere **except** in specific conditions. This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
+You can use the `not` field to apply a rule everywhere **except** in specific conditions.
+This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
 
 ```json
 {
@@ -142,11 +159,13 @@ You can use the `not` field to apply a rule everywhere **except** in specific co
   }
 }
 
+
 ```
 
 ### Random Output Selection
 
-You can specify a list of outputs to randomly choose from. This is useful for adding visual variation or handling cases where variants are split into different block IDs (rather than block states).
+You can specify a list of outputs to randomly choose from.
+This is useful for adding visual variation or handling cases where variants are split into different block IDs (rather than block states).
 
 ```json
 {

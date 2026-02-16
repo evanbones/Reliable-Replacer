@@ -22,6 +22,7 @@ You can further control the properties of the placed block using these fields.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `output_nbt` | String | A JSON string representing NBT data to apply to the output block (e.g., `"{SpawnData:{entity:{id:\"minecraft:zombie\"}}}"`). |
 | `output_state_properties` | Map\<String, String\> | Force specific properties on the output block (e.g., `{"axis": "y"}`). Overrides `keep_states`. |
 | `randomize_properties` | List\<String\> | A list of properties to randomize (e.g., `["facing", "rotation"]`). Deterministic based on position. |
 
@@ -37,6 +38,7 @@ Use the `additional_blocks` field to place or remove secondary blocks at specifi
 * `output` / `outputs`: The block ID(s) to place at the offset.
 * `remove`: Boolean. If `true`, explicitly sets the offset block to Air.
 * `x_offset`, `y_offset`, `z_offset`: Integers representing the coordinate offset relative to the original block (Default `0`).
+* `output_nbt`: A JSON string representing NBT data to apply to this offset block.
 * `output_state_properties`: A Map to force specific properties on this offset block.
 * `randomize_properties`: A List of properties to randomize for this offset block.
 
