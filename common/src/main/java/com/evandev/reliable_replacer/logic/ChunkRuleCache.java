@@ -57,7 +57,8 @@ public class ChunkRuleCache {
 
         StructureManager structureManager = sl.structureManager();
         Registry<Structure> structRegistry = sl.registryAccess().registryOrThrow(Registries.STRUCTURE);
-        ChunkAccess chunk = sl.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.STRUCTURE_REFERENCES);
+
+        ChunkAccess chunk = level.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.STRUCTURE_REFERENCES);
 
         List<BoundingBox> boxes = new ArrayList<>();
         Map<Structure, LongSet> references = chunk.getAllReferences();
@@ -75,7 +76,7 @@ public class ChunkRuleCache {
                         StructureStart start = structureManager.getStartForStructure(
                                 startPos,
                                 structure,
-                                sl.getChunk(structChunkPos.x, structChunkPos.z, ChunkStatus.STRUCTURE_STARTS)
+                                level.getChunk(structChunkPos.x, structChunkPos.z, ChunkStatus.STRUCTURE_STARTS)
                         );
 
                         if (start != null && start.isValid()) {

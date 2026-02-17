@@ -1,4 +1,3 @@
-### Added
+### Fixed
 
-- Added a filter for `input_nbt` for targetting specific blocks with NBT.
-- Added a filter for `output_nbt` for placing blocks with NBT.
+- Fixed issue when using `output_nbt` and `structure` filters together.
