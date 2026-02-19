@@ -19,9 +19,10 @@ public class ReliableReplacerMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        CommonClass.init();
+
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             CommonClass.setServer(server);
-
             ModConfig.load();
             RuleManager.load(server);
         });

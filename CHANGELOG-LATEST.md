@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed issue when using `output_nbt` and `structure` filters together.
+- Config now generates on game startup, instead of on world load.
