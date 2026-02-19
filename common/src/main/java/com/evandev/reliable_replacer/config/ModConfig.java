@@ -38,9 +38,11 @@ public class ModConfig {
             } catch (Exception e) {
                 Constants.LOG.error("Failed to load reliable_replacer.json", e);
                 INSTANCE = new ModConfig();
+                save();
             }
         } else {
             INSTANCE = new ModConfig();
+            save();
         }
     }
 

@@ -30,7 +30,7 @@ public class ReliableReplacerMod {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        CommonClass.init();
+        event.enqueueWork(CommonClass::init);
     }
 
     private void onServerStarting(ServerStartingEvent event) {
