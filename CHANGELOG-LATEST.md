@@ -1,3 +1,3 @@
-### Fixed
+### Added
 
-- Config now generates on game startup, instead of on world load.
+- Missing ID swaps now support structure repaletting.
