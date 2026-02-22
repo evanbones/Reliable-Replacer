@@ -37,6 +37,7 @@ public class RuleManager {
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     public static volatile boolean HAS_LIVE_RULES = false;
+    public static volatile boolean HAS_AIR_RULES = false;
     public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
 
     public static void load(MinecraftServer server) {
@@ -63,20 +64,28 @@ public class RuleManager {
 
         Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
         boolean anyLiveRules = false;
+        boolean anyAirRules = false;
 
         for (ReplacementRule rule : loadedRules) {
             rule.resolveBlocks();
 
             for (Block b : rule.getInputBlocks()) {
                 blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
+
                 if (rule.shouldRunPlayerBlocks()) {
                     anyLiveRules = true;
+                }
+
+                // Check if this block is air
+                if (b.defaultBlockState().isAir()) {
+                    anyAirRules = true;
                 }
             }
         }
 
         RULES_BY_BLOCK = blockMap;
         HAS_LIVE_RULES = anyLiveRules;
+        HAS_AIR_RULES = anyAirRules;
 
         Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}", RULES_BY_BLOCK.size(), HAS_LIVE_RULES);
 
