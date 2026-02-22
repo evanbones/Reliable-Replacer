@@ -1,5 +1,6 @@
 package com.evandev.reliable_replacer.util;
 
+import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -22,18 +23,19 @@ public class BlockUtil {
         int chunkStartX = chunk.getPos().getMinBlockX();
         int chunkStartZ = chunk.getPos().getMinBlockZ();
         LevelChunkSection[] sections = chunk.getSections();
+        boolean processAir = RuleManager.HAS_AIR_RULES;
 
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
-            if (section == null || section.hasOnlyAir()) continue;
 
+            if (section == null || (section.hasOnlyAir() && !processAir)) continue;
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
 
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
                     for (int x = 0; x < 16; x++) {
                         BlockState original = section.getBlockState(x, y, z);
-                        if (original.isAir()) continue;
+                        if (original.isAir() && !processAir) continue;
 
                         mutablePos.set(chunkStartX + x, bottomY + y, chunkStartZ + z);
                         action.accept(mutablePos, original);
