@@ -76,7 +76,6 @@ public class RuleManager {
                     anyLiveRules = true;
                 }
 
-                // Check if this block is air
                 if (b.defaultBlockState().isAir()) {
                     anyAirRules = true;
                 }
