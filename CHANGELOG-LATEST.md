@@ -1,3 +1,3 @@
-### Fixed
+### Changed
 
-- Fixed crash with certain mods that simulate level rendering (like GuideME).
+- Output blocks in rules are now validated and will throw a warning to the console if invalid.

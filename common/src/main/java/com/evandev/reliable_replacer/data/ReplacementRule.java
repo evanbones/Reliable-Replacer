@@ -119,7 +119,11 @@ public class ReplacementRule {
                     outputBlocks = new ArrayList<>();
                     for (String outStr : combinedOutputs) {
                         ResourceLocation id = ResourceLocation.tryParse(outStr);
-                        outputBlocks.add(id != null ? BuiltInRegistries.BLOCK.get(id) : Blocks.AIR);
+                        if (id != null && BuiltInRegistries.BLOCK.containsKey(id)) {
+                            outputBlocks.add(BuiltInRegistries.BLOCK.get(id));
+                        } else {
+                            Constants.LOG.warn("Reliable Replacer: Could not find output block '{}' in the registry. It will be ignored.", outStr);
+                        }
                     }
                 }
             }
