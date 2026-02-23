@@ -1,4 +1,4 @@
 ### Fixed
 
-- Added explicit support for replacing air.
-  - **NOTE**: While this is _technically_ supported, it can/will cause worldgen lag when used on a large scale. Be careful!
+- Improved worldgen and placement handling for multiblocks (doors, tall flowers, etc.)
+    - This means multiblock rules should work seamlessly in simple input/output swaps without any additional filtering.

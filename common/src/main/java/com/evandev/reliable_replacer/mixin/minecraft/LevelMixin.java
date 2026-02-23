@@ -16,6 +16,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.List;
+
 @Mixin(Level.class)
 public abstract class LevelMixin {
 
@@ -24,6 +26,12 @@ public abstract class LevelMixin {
 
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z", at = @At("HEAD"), cancellable = true)
     private void onSetBlock(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<Boolean> cir) {
+        List<BlockPos> queuedPositions = RuleManager.LIVE_PLACEMENT_QUEUE.get();
+        if (queuedPositions != null) {
+            queuedPositions.add(pos.immutable());
+            return;
+        }
+
         if (!RuleManager.HAS_LIVE_RULES) return;
         if (reliableReplacer$isReplacing.get()) return;
         if (!ModConfig.get().enabled) return;
