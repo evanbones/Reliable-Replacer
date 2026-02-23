@@ -38,7 +38,15 @@ public abstract class LevelMixin {
 
         Level level = (Level) (Object) this;
         LevelData levelData = level.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        if (levelData == null) return;
+
+        BlockPos spawnPos;
+        try {
+            spawnPos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        } catch (Exception e) {
+            return;
+        }
+
         LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
         ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
 
