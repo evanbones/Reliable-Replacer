@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class RuleManager {
+    public static final ThreadLocal<List<BlockPos>> LIVE_PLACEMENT_QUEUE = new ThreadLocal<>();
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     public static volatile boolean HAS_LIVE_RULES = false;

@@ -123,7 +123,7 @@ public class BlockUtil {
         } else {
             try {
                 if (stateChanged) {
-                    level.setBlock(pos, state, 2);
+                    level.setBlock(pos, state, 50);
                 }
                 if (customNbt != null) {
                     BlockEntity be = level.getBlockEntity(pos);
