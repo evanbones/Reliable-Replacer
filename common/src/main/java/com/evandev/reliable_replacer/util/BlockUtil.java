@@ -63,24 +63,31 @@ public class BlockUtil {
             }
 
             if (currentTag == null) continue;
-            String listKey = path[path.length - 1];
+            String targetKey = path[path.length - 1];
 
-            if (!currentTag.contains(listKey, Tag.TAG_LIST)) continue;
-
-            ListTag listTag = currentTag.getList(listKey, Tag.TAG_COMPOUND);
-            for (int i = 0; i < listTag.size(); i++) {
-                CompoundTag itemTag = listTag.getCompound(i);
-
-                if (itemTag.getString("id").equals(replacement.match_id)) {
-                    itemTag.putString("id", replacement.replace_id);
-
-                    if (replacement.parsedReplaceNbt != null) {
-                        if (!itemTag.contains("tag", Tag.TAG_COMPOUND)) {
-                            itemTag.put("tag", new CompoundTag());
-                        }
-                        itemTag.getCompound("tag").merge(replacement.parsedReplaceNbt);
-                    }
+            if (currentTag.contains(targetKey, Tag.TAG_LIST)) {
+                ListTag listTag = currentTag.getList(targetKey, Tag.TAG_COMPOUND);
+                for (int i = 0; i < listTag.size(); i++) {
+                    CompoundTag itemTag = listTag.getCompound(i);
+                    replaceItemInTag(itemTag, replacement);
                 }
+            }
+            else if (currentTag.contains(targetKey, Tag.TAG_COMPOUND)) {
+                CompoundTag itemTag = currentTag.getCompound(targetKey);
+                replaceItemInTag(itemTag, replacement);
+            }
+        }
+    }
+
+    private static void replaceItemInTag(CompoundTag itemTag, ItemReplacement replacement) {
+        if (itemTag.getString("id").equals(replacement.match_id)) {
+            itemTag.putString("id", replacement.replace_id);
+
+            if (replacement.parsedReplaceNbt != null) {
+                if (!itemTag.contains("tag", Tag.TAG_COMPOUND)) {
+                    itemTag.put("tag", new CompoundTag());
+                }
+                itemTag.getCompound("tag").merge(replacement.parsedReplaceNbt);
             }
         }
     }

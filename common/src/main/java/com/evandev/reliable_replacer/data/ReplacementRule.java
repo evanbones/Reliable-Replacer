@@ -151,10 +151,10 @@ public class ReplacementRule {
                     BuiltInRegistries.BLOCK.getTagOrEmpty(tagKey)
                             .forEach(holder -> inputBlocks.add(holder.value()));
                 }
-            } else if (id.endsWith(":*")) {
-                String namespace = id.split(":")[0];
+            } else if (id.contains("*")) {
+                String regex = id.replace("*", ".*");
                 BuiltInRegistries.BLOCK.entrySet().stream()
-                        .filter(entry -> entry.getKey().location().getNamespace().equals(namespace))
+                        .filter(entry -> entry.getKey().toString().matches(regex))
                         .map(java.util.Map.Entry::getValue)
                         .forEach(inputBlocks::add);
             } else {
