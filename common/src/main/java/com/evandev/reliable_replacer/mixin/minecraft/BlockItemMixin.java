@@ -52,14 +52,14 @@ public class BlockItemMixin {
 
                         if (!replacement.equals(state) || hasAdditionalBlocks || hasCustomNbt) {
                             if (!replacement.equals(state) || hasCustomNbt) {
-                                BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), 3);
+                                BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), 3);
                             }
 
                             if (hasAdditionalBlocks) {
                                 for (var entry : result.additionalBlocks().entrySet()) {
                                     BlockPos addPos = entry.getKey();
                                     CompoundTag addNbt = result.additionalNbt().get(addPos);
-                                    BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, 3);
+                                    BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, null, 3);
                                 }
                             }
                         }

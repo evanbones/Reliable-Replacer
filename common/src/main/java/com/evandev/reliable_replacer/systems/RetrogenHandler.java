@@ -47,7 +47,7 @@ public class RetrogenHandler {
                 BlockState replacement = result.state();
                 boolean hasCustomNbt = result.customNbt() != null;
                 if (replacement != original || hasCustomNbt) {
-                    BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), 50);
+                    BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), 50);
                     changed.set(true);
                     modifiedPositions.add(pos.immutable());
                 }
@@ -57,7 +57,7 @@ public class RetrogenHandler {
                         BlockPos addPos = entry.getKey();
                         BlockState addState = entry.getValue();
                         CompoundTag addNbt = result.additionalNbt().get(addPos);
-                        BlockUtil.swapBlockWithNbt(level, addPos, addState, false, addNbt, 50);
+                        BlockUtil.swapBlockWithNbt(level, addPos, addState, false, addNbt, null, 50);
                         changed.set(true);
                         modifiedPositions.add(addPos.immutable());
                     }

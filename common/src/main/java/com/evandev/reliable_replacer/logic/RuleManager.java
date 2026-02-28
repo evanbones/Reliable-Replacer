@@ -164,11 +164,11 @@ public class RuleManager {
                 }
             }
 
-            if (replacement.equals(original) && additionalBlocksMap.isEmpty() && rule.parsedOutputNbt == null) {
+            if (replacement.equals(original) && additionalBlocksMap.isEmpty() && rule.parsedOutputNbt == null && (rule.itemReplacements == null || rule.itemReplacements.isEmpty())) {
                 return null;
             }
 
-            return new ReplacementResult(replacement, rule.keepNbt, rule.parsedOutputNbt, additionalBlocksMap, additionalNbtMap);
+            return new ReplacementResult(replacement, rule.keepNbt, rule.parsedOutputNbt, rule.itemReplacements, additionalBlocksMap, additionalNbtMap);
         }
 
         return null;

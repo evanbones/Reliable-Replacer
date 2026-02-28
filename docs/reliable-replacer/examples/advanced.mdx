@@ -178,3 +178,24 @@ This is useful for adding visual variation or handling cases where variants are 
 }
 
 ```
+
+### Selective Item NBT Replacement
+
+Instead of replacing the entire NBT compound for a chest, you can target specific items inside its inventory to mutate. This is perfect for migrating items from removed mods or updating tools to equivalents like Tinkers Construct.
+
+This example searches any block tagged `#c:chests` for a Vanilla Iron Sword, replaces it with a Tinkers Construct sword, and applies the necessary tool data NBT without touching any other items in the chest.
+
+```json
+{
+  "inputs": ["#c:chests"],
+  "item_replacements": [
+    {
+      "list_name": "Items",
+      "match_id": "minecraft:iron_sword",
+      "replace_id": "tconstruct:sword",
+      "replace_nbt": "{tic_stats:{Damage:5.5f,AttackSpeed:1.6f}}"
+    }
+  ]
+}
+
+```

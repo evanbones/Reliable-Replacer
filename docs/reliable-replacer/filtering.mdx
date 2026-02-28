@@ -25,6 +25,18 @@ You can further control the properties of the placed block using these fields.
 | `output_nbt` | String | A JSON string representing NBT data to apply to the output block (e.g., `"{SpawnData:{entity:{id:\"minecraft:zombie\"}}}"`). |
 | `output_state_properties` | Map\<String, String\> | Force specific properties on the output block (e.g., `{"axis": "y"}`). Overrides `keep_states`. |
 | `randomize_properties` | List\<String\> | A list of properties to randomize (e.g., `["facing", "rotation"]`). Deterministic based on position. |
+| `item_replacements` | List\<Object\> | A list of rules to selectively replace individual items inside a block entity's NBT arrays (like chests). |
+
+### Item Replacements Properties
+
+When using the `item_replacements` array, each rule object accepts the following properties to surgically swap items inside NBT lists:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `list_name` | String | The NBT key of the list to iterate over. Defaults to `"Items"`. Supports dot-notation for nested lists (e.g., `"Inventory.Items"`). |
+| `match_id` | String | The registry ID of the item you want to find and replace (e.g., `"minecraft:wooden_sword"`). |
+| `replace_id` | String | The new item registry ID to replace the matched item with. |
+| `replace_nbt` | String | *(Optional)* A stringified NBT compound to merge directly into the new item's `tag` property. |
 
 ### Multi-Block Structures
 

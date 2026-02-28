@@ -29,6 +29,7 @@ public class NbtTest {
                 Blocks.BARREL.defaultBlockState(),
                 true,
                 null,
+                null,
                 3
         );
 
@@ -58,6 +59,7 @@ public class NbtTest {
                 Blocks.BARREL.defaultBlockState(),
                 false,
                 customNbt,
+                null,
                 3
         );
 
