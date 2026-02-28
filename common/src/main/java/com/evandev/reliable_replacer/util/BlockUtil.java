@@ -1,9 +1,12 @@
 package com.evandev.reliable_replacer.util;
 
+import com.evandev.reliable_replacer.data.ItemReplacement;
 import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -11,13 +14,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 public class BlockUtil {
 
-    /**
-     * Iterates over every non-air block in a chunk and performs an action.
-     */
     public static void processChunkBlocks(ChunkAccess chunk, BiConsumer<BlockPos, BlockState> action) {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         int chunkStartX = chunk.getPos().getMinBlockX();
@@ -45,7 +46,46 @@ public class BlockUtil {
         }
     }
 
-    public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, CompoundTag customNbt, int flags) {
+    public static void applyItemReplacements(CompoundTag blockEntityNbt, List<ItemReplacement> replacements) {
+        if (replacements == null || replacements.isEmpty() || blockEntityNbt == null) return;
+
+        for (ItemReplacement replacement : replacements) {
+            String[] path = replacement.list_name.split("\\.");
+            CompoundTag currentTag = blockEntityNbt;
+
+            for (int i = 0; i < path.length - 1; i++) {
+                if (currentTag.contains(path[i], Tag.TAG_COMPOUND)) {
+                    currentTag = currentTag.getCompound(path[i]);
+                } else {
+                    currentTag = null;
+                    break;
+                }
+            }
+
+            if (currentTag == null) continue;
+            String listKey = path[path.length - 1];
+
+            if (!currentTag.contains(listKey, Tag.TAG_LIST)) continue;
+
+            ListTag listTag = currentTag.getList(listKey, Tag.TAG_COMPOUND);
+            for (int i = 0; i < listTag.size(); i++) {
+                CompoundTag itemTag = listTag.getCompound(i);
+
+                if (itemTag.getString("id").equals(replacement.match_id)) {
+                    itemTag.putString("id", replacement.replace_id);
+
+                    if (replacement.parsedReplaceNbt != null) {
+                        if (!itemTag.contains("tag", Tag.TAG_COMPOUND)) {
+                            itemTag.put("tag", new CompoundTag());
+                        }
+                        itemTag.getCompound("tag").merge(replacement.parsedReplaceNbt);
+                    }
+                }
+            }
+        }
+    }
+
+    public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, CompoundTag customNbt, List<ItemReplacement> itemReplacements, int flags) {
         CompoundTag nbtData = null;
 
         if (keepNbt) {
@@ -64,7 +104,7 @@ public class BlockUtil {
             success = level.setBlock(pos, replacement, flags);
         }
 
-        if (success && (nbtData != null || customNbt != null)) {
+        if (success && (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty()))) {
             BlockEntity newBlockEntity = level.getBlockEntity(pos);
             if (newBlockEntity != null) {
                 CompoundTag finalNbt = newBlockEntity.saveWithoutMetadata(level.registryAccess());
@@ -83,6 +123,9 @@ public class BlockUtil {
                     customCopy.remove("z");
                     finalNbt.merge(customCopy);
                 }
+
+                applyItemReplacements(finalNbt, itemReplacements);
+
                 newBlockEntity.loadWithComponents(finalNbt, level.registryAccess());
                 newBlockEntity.setChanged();
 
@@ -93,7 +136,7 @@ public class BlockUtil {
         return success;
     }
 
-    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, CompoundTag customNbt) {
+    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, CompoundTag customNbt, List<ItemReplacement> itemReplacements) {
         int cx = pos.getX() >> 4;
         int cz = pos.getZ() >> 4;
 
@@ -104,20 +147,28 @@ public class BlockUtil {
             if (stateChanged) {
                 currentChunk.setBlockState(pos, state, false);
             }
-            if (customNbt != null) {
-                CompoundTag copy = customNbt.copy();
-                copy.putInt("x", pos.getX());
-                copy.putInt("y", pos.getY());
-                copy.putInt("z", pos.getZ());
-
+            if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                 BlockEntity be = currentChunk.getBlockEntity(pos);
+                CompoundTag finalNbt = new CompoundTag();
                 if (be != null) {
-                    CompoundTag finalNbt = be.saveWithoutMetadata(level.registryAccess());
+                    finalNbt = be.saveWithoutMetadata(level.registryAccess());
+                }
+
+                if (customNbt != null) {
+                    CompoundTag copy = customNbt.copy();
+                    copy.putInt("x", pos.getX());
+                    copy.putInt("y", pos.getY());
+                    copy.putInt("z", pos.getZ());
                     copy.remove("id");
                     finalNbt.merge(copy);
+                }
+
+                applyItemReplacements(finalNbt, itemReplacements);
+
+                if (be != null) {
                     be.loadWithComponents(finalNbt, level.registryAccess());
-                } else {
-                    currentChunk.setBlockEntityNbt(copy);
+                } else if (customNbt != null) {
+                    currentChunk.setBlockEntityNbt(finalNbt);
                 }
             }
         } else {
@@ -125,21 +176,24 @@ public class BlockUtil {
                 if (stateChanged) {
                     level.setBlock(pos, state, 50);
                 }
-                if (customNbt != null) {
+                if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
                         CompoundTag finalNbt = be.saveWithoutMetadata(level.registryAccess());
-                        CompoundTag copy = customNbt.copy();
-                        copy.remove("id");
-                        copy.remove("x");
-                        copy.remove("y");
-                        copy.remove("z");
-                        finalNbt.merge(copy);
+                        if (customNbt != null) {
+                            CompoundTag copy = customNbt.copy();
+                            copy.remove("id");
+                            copy.remove("x");
+                            copy.remove("y");
+                            copy.remove("z");
+                            finalNbt.merge(copy);
+                        }
+
+                        applyItemReplacements(finalNbt, itemReplacements);
                         be.loadWithComponents(finalNbt, level.registryAccess());
                     }
                 }
             } catch (Exception ignored) {
-                // Ignore if offset is pushed out to unloaded chunks during generation bounds
             }
         }
     }

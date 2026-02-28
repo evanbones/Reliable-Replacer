@@ -46,7 +46,7 @@ public class WorldgenHandler {
                 BlockState replacement = result.state();
                 boolean hasCustomNbt = result.customNbt() != null;
                 if (replacement != original || hasCustomNbt) {
-                    BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement, result.customNbt());
+                    BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement, result.customNbt(), result.itemReplacements());
                     modifiedPositions.add(pos.immutable());
                 }
 
@@ -55,7 +55,7 @@ public class WorldgenHandler {
                         BlockPos addPos = entry.getKey();
                         BlockState addState = entry.getValue();
                         CompoundTag addNbt = result.additionalNbt().get(addPos);
-                        BlockUtil.safeSetBlock(levelAccessor, chunk, addPos, addState, addNbt);
+                        BlockUtil.safeSetBlock(levelAccessor, chunk, addPos, addState, addNbt, null);
                         modifiedPositions.add(addPos.immutable());
                     }
                 }

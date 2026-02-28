@@ -29,6 +29,9 @@ public class ReplacementRule {
     @SerializedName("additional_blocks")
     public List<AdditionalBlock> additionalBlocks = new ArrayList<>();
 
+    @SerializedName("item_replacements")
+    public List<ItemReplacement> itemReplacements = new ArrayList<>();
+
     public Set<String> biomes = new HashSet<>();
     public Set<String> dimensions = new HashSet<>();
     public Set<String> structures = new HashSet<>();
@@ -195,6 +198,18 @@ public class ReplacementRule {
                 parsedInputNbt = TagParser.parseTag(inputNbt);
             } catch (Exception e) {
                 Constants.LOG.error("Reliable Replacer: Failed to parse input_nbt for rule: {}", inputNbt, e);
+            }
+        }
+
+        if (itemReplacements != null) {
+            for (ItemReplacement itemReplacement : itemReplacements) {
+                if (itemReplacement.replaceNbt != null && !itemReplacement.replaceNbt.trim().isEmpty()) {
+                    try {
+                        itemReplacement.parsedReplaceNbt = TagParser.parseTag(itemReplacement.replaceNbt);
+                    } catch (Exception e) {
+                        Constants.LOG.error("Reliable Replacer: Failed to parse replace_nbt for item replacement: {}", itemReplacement.replaceNbt, e);
+                    }
+                }
             }
         }
 

@@ -58,14 +58,14 @@ public abstract class LevelMixin {
                 try {
                     boolean success = false;
                     if (!replacement.equals(state) || hasCustomNbt) {
-                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), flags);
+                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), flags);
                     }
 
                     if (hasAdditionalBlocks) {
                         for (var entry : result.additionalBlocks().entrySet()) {
                             BlockPos addPos = entry.getKey();
                             CompoundTag addNbt = result.additionalNbt().get(addPos);
-                            BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, flags);
+                            BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, null, flags);
                         }
                         if (replacement.equals(state) && !hasCustomNbt) success = true;
                     }
