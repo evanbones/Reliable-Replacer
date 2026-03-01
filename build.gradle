@@ -4,12 +4,6 @@ plugins {
     id 'org.moddedmc.wiki.toolkit' version '0.4.1'
 }
 
-subprojects {
-    tasks.withType(Javadoc) {
-        options.addStringOption('Xdoclint:none', '-quiet')
-    }
-}
-
 wiki {
     wikiAccessToken = System.getenv("WIKI_ACCESS_TOKEN")
     docs.create("reliable-replacer") {

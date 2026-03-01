@@ -49,9 +49,10 @@ public class BlockItemMixin {
                         BlockState replacement = result.state();
                         boolean hasAdditionalBlocks = result.additionalBlocks() != null && !result.additionalBlocks().isEmpty();
                         boolean hasCustomNbt = result.customNbt() != null;
+                        boolean hasItemReplacements = result.itemReplacements() != null && !result.itemReplacements().isEmpty();
 
-                        if (!replacement.equals(state) || hasAdditionalBlocks || hasCustomNbt) {
-                            if (!replacement.equals(state) || hasCustomNbt) {
+                        if (!replacement.equals(state) || hasAdditionalBlocks || hasCustomNbt || hasItemReplacements) {
+                            if (!replacement.equals(state) || hasCustomNbt || hasItemReplacements) {
                                 BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), 3);
                             }
 
