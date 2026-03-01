@@ -160,7 +160,7 @@ public class BlockUtil {
                 if (be != null) {
                     finalNbt = be.saveWithoutMetadata(level.registryAccess());
                 } else {
-                    CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos);
+                    CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos, level.registryAccess());
                     if (deferredNbt != null) {
                         finalNbt = deferredNbt.copy();
                     }
