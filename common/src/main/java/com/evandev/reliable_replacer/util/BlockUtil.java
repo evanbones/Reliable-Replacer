@@ -71,8 +71,7 @@ public class BlockUtil {
                     CompoundTag itemTag = listTag.getCompound(i);
                     replaceItemInTag(itemTag, replacement);
                 }
-            }
-            else if (currentTag.contains(targetKey, Tag.TAG_COMPOUND)) {
+            } else if (currentTag.contains(targetKey, Tag.TAG_COMPOUND)) {
                 CompoundTag itemTag = currentTag.getCompound(targetKey);
                 replaceItemInTag(itemTag, replacement);
             }
@@ -157,8 +156,14 @@ public class BlockUtil {
             if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                 BlockEntity be = currentChunk.getBlockEntity(pos);
                 CompoundTag finalNbt = new CompoundTag();
+
                 if (be != null) {
                     finalNbt = be.saveWithoutMetadata(level.registryAccess());
+                } else {
+                    CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos);
+                    if (deferredNbt != null) {
+                        finalNbt = deferredNbt.copy();
+                    }
                 }
 
                 if (customNbt != null) {
@@ -174,7 +179,7 @@ public class BlockUtil {
 
                 if (be != null) {
                     be.loadWithComponents(finalNbt, level.registryAccess());
-                } else if (customNbt != null) {
+                } else {
                     currentChunk.setBlockEntityNbt(finalNbt);
                 }
             }
