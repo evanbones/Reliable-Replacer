@@ -37,6 +37,7 @@ When using the `item_replacements` array, each rule object accepts the following
 | `match_id` | String | The registry ID of the item you want to find and replace (e.g., `"minecraft:wooden_sword"`). |
 | `replace_id` | String | The new item registry ID to replace the matched item with. |
 | `replace_nbt` | String | *(Optional)* A stringified NBT compound to merge directly into the new item's `tag` property. |
+| `probability` | Float | *(Optional)* A number between `0.0` and `1.0` representing the independent chance for this specific item replacement to occur. Great for loot randomization! |
 
 ### Multi-Block Structures
 

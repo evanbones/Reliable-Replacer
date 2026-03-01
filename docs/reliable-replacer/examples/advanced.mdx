@@ -199,3 +199,30 @@ This example searches any block tagged `#c:chests` for a Vanilla Iron Sword, rep
 }
 
 ```
+
+You can apply a probability to individual item replacements. Because the mod evaluates item replacements from top to bottom, you can stack them with cumulative probabilities to randomize an item into one of several different outcomes independently per slot.
+
+This example randomizes wooden swords found inside a chest into either a Tinkers Construct Sword (50% chance) or a Dagger (50% chance). Each wooden sword in the chest rolls independently!
+
+```json
+{
+  "inputs": ["#c:chests"],
+  "item_replacements": [
+    {
+      "probability": 0.5,
+      "list_name": "Items",
+      "match_id": "minecraft:wooden_sword",
+      "replace_id": "tconstruct:sword",
+      "replace_nbt": "{Damage:0,tic_broken:0b,tic_materials:[\"tconstruct:iron\",\"tconstruct:wood\",\"tconstruct:wood\"]}"
+    },
+    {
+      "probability": 1.0,
+      "list_name": "Items",
+      "match_id": "minecraft:wooden_sword",
+      "replace_id": "tconstruct:dagger",
+      "replace_nbt": "{Damage:0,tic_broken:0b,tic_materials:[\"tconstruct:iron\",\"tconstruct:wood\"]}"
+    }
+  ]
+}
+
+```

@@ -15,6 +15,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 
 public class BlockUtil {
@@ -79,7 +80,12 @@ public class BlockUtil {
     }
 
     private static void replaceItemInTag(CompoundTag itemTag, ItemReplacement replacement) {
-        if (itemTag.getString("id").equals(replacement.match_id)) {
+        if (itemTag.getString("id").matches(replacement.match_id.replace("*", ".*"))) {
+
+            if (replacement.probability != null && ThreadLocalRandom.current().nextFloat() > replacement.probability) {
+                return;
+            }
+
             itemTag.putString("id", replacement.replace_id);
 
             if (replacement.parsedReplaceNbt != null) {

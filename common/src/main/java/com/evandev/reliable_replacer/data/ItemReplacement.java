@@ -9,6 +9,8 @@ public class ItemReplacement {
     public String replace_id;
     @SerializedName("replace_nbt")
     public String replaceNbt;
+    @SerializedName("probability")
+    public Float probability = null;
 
     public transient CompoundTag parsedReplaceNbt;
 }
