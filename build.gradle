@@ -2,9 +2,3 @@ plugins {
     id 'fabric-loom' version '1.8-SNAPSHOT' apply false
     id 'net.neoforged.moddev' version '2.0.49-beta' apply false
 }
-
-subprojects {
-    tasks.withType(Javadoc) {
-        options.addStringOption('Xdoclint:none', '-quiet')
-    }
-}

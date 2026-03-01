@@ -44,7 +44,9 @@ public class RetrogenHandler {
             if (result != null) {
                 BlockState replacement = result.state();
                 boolean hasCustomNbt = result.customNbt() != null;
-                if (replacement != original || hasCustomNbt) {
+                boolean hasItemReplacements = result.itemReplacements() != null && !result.itemReplacements().isEmpty();
+
+                if (replacement != original || hasCustomNbt || hasItemReplacements) {
                     BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), 50);
                     changed.set(true);
                     modifiedPositions.add(pos.immutable());

@@ -45,7 +45,9 @@ public class WorldgenHandler {
             if (result != null) {
                 BlockState replacement = result.state();
                 boolean hasCustomNbt = result.customNbt() != null;
-                if (replacement != original || hasCustomNbt) {
+                boolean hasItemReplacements = result.itemReplacements() != null && !result.itemReplacements().isEmpty();
+
+                if (replacement != original || hasCustomNbt || hasItemReplacements) {
                     BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement, result.customNbt(), result.itemReplacements());
                     modifiedPositions.add(pos.immutable());
                 }

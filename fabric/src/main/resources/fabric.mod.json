@@ -8,8 +8,8 @@
     "${mod_author}"
   ],
   "contact": {
-    "homepage": "https://github.com/evanbones/Reliable-Recipes",
-    "sources": "https://github.com/evanbones/Reliable-Recipes"
+    "homepage": "https://github.com/evanbones/Reliable-Replacer",
+    "sources": "https://github.com/evanbones/Reliable-Replacer"
   },
   "license": "${license}",
   "icon": "${mod_id}.png",
