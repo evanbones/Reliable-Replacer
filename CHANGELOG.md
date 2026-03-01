@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Added
+
 - Added NBT replacement inside inventories.
+- Added logic for item randomization with NBT replacement.
 
 ## [1.2.10] - 2026-02-23
 

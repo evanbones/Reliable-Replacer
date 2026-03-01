@@ -154,7 +154,7 @@ public class ReplacementRule {
             } else if (id.contains("*")) {
                 String regex = id.replace("*", ".*");
                 BuiltInRegistries.BLOCK.entrySet().stream()
-                        .filter(entry -> entry.getKey().toString().matches(regex))
+                        .filter(entry -> entry.getKey().location().toString().matches(regex))
                         .map(java.util.Map.Entry::getValue)
                         .forEach(inputBlocks::add);
             } else {
