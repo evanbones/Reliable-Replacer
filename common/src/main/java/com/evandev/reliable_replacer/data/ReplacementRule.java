@@ -6,7 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -84,9 +84,9 @@ public class ReplacementRule {
     public transient Integer cachedMinYOffset, cachedMaxYOffset;
     public transient Integer cachedMinZOffset, cachedMaxZOffset;
 
-    public transient Set<ResourceLocation> parsedBiomes;
-    public transient Set<ResourceLocation> parsedDimensions;
-    public transient Set<ResourceLocation> parsedStructures;
+    public transient Set<Identifier> parsedBiomes;
+    public transient Set<Identifier> parsedDimensions;
+    public transient Set<Identifier> parsedStructures;
     public transient CompoundTag parsedOutputNbt;
     private transient List<Block> outputBlocks;
     private transient Set<Block> inputBlocks;
@@ -121,9 +121,9 @@ public class ReplacementRule {
                 } else {
                     outputBlocks = new ArrayList<>();
                     for (String outStr : combinedOutputs) {
-                        ResourceLocation id = ResourceLocation.tryParse(outStr);
+                        Identifier id = Identifier.tryParse(outStr);
                         if (id != null && BuiltInRegistries.BLOCK.containsKey(id)) {
-                            outputBlocks.add(BuiltInRegistries.BLOCK.get(id));
+                            outputBlocks.add(BuiltInRegistries.BLOCK.getValue(id));
                         } else {
                             Constants.LOG.warn("Reliable Replacer: Could not find output block '{}' in the registry. It will be ignored.", outStr);
                         }
@@ -145,7 +145,7 @@ public class ReplacementRule {
         inputBlocks = new HashSet<>();
         for (String id : inputs) {
             if (id.startsWith("#")) {
-                ResourceLocation rl = ResourceLocation.tryParse(id.substring(1));
+                Identifier rl = Identifier.tryParse(id.substring(1));
                 if (rl != null) {
                     TagKey<Block> tagKey = TagKey.create(Registries.BLOCK, rl);
                     BuiltInRegistries.BLOCK.getTagOrEmpty(tagKey)
@@ -154,13 +154,13 @@ public class ReplacementRule {
             } else if (id.contains("*")) {
                 String regex = id.replace("*", ".*");
                 BuiltInRegistries.BLOCK.entrySet().stream()
-                        .filter(entry -> entry.getKey().location().toString().matches(regex))
+                        .filter(entry -> entry.getKey().identifier().toString().matches(regex))
                         .map(java.util.Map.Entry::getValue)
                         .forEach(inputBlocks::add);
             } else {
-                ResourceLocation rl = ResourceLocation.tryParse(id);
+                Identifier rl = Identifier.tryParse(id);
                 if (rl != null && BuiltInRegistries.BLOCK.containsKey(rl)) {
-                    inputBlocks.add(BuiltInRegistries.BLOCK.get(rl));
+                    inputBlocks.add(BuiltInRegistries.BLOCK.getValue(rl));
                 } else {
                     Constants.LOG.warn("Reliable Replacer: Could not find block '{}' in the registry. It will be ignored.", id);
                 }
@@ -169,25 +169,25 @@ public class ReplacementRule {
 
         parsedBiomes = new HashSet<>();
         if (biomes != null) biomes.forEach(s -> {
-            ResourceLocation rl = ResourceLocation.tryParse(s);
+            Identifier rl = Identifier.tryParse(s);
             if (rl != null) parsedBiomes.add(rl);
         });
 
         parsedDimensions = new HashSet<>();
         if (dimensions != null) dimensions.forEach(s -> {
-            ResourceLocation rl = ResourceLocation.tryParse(s);
+            Identifier rl = Identifier.tryParse(s);
             if (rl != null) parsedDimensions.add(rl);
         });
 
         parsedStructures = new HashSet<>();
         if (structures != null) structures.forEach(s -> {
-            ResourceLocation rl = ResourceLocation.tryParse(s);
+            Identifier rl = Identifier.tryParse(s);
             if (rl != null) parsedStructures.add(rl);
         });
 
         if (outputNbt != null && !outputNbt.trim().isEmpty()) {
             try {
-                parsedOutputNbt = TagParser.parseTag(outputNbt);
+                parsedOutputNbt = TagParser.parseCompoundFully(outputNbt);
             } catch (Exception e) {
                 Constants.LOG.error("Reliable Replacer: Failed to parse output_nbt for rule: {}", outputNbt, e);
             }
@@ -195,7 +195,7 @@ public class ReplacementRule {
 
         if (inputNbt != null && !inputNbt.trim().isEmpty()) {
             try {
-                parsedInputNbt = TagParser.parseTag(inputNbt);
+                parsedInputNbt = TagParser.parseCompoundFully(inputNbt);
             } catch (Exception e) {
                 Constants.LOG.error("Reliable Replacer: Failed to parse input_nbt for rule: {}", inputNbt, e);
             }
@@ -205,7 +205,7 @@ public class ReplacementRule {
             for (ItemReplacement itemReplacement : itemReplacements) {
                 if (itemReplacement.replaceNbt != null && !itemReplacement.replaceNbt.trim().isEmpty()) {
                     try {
-                        itemReplacement.parsedReplaceNbt = TagParser.parseTag(itemReplacement.replaceNbt);
+                        itemReplacement.parsedReplaceNbt = TagParser.parseCompoundFully(itemReplacement.replaceNbt);
                     } catch (Exception e) {
                         Constants.LOG.error("Reliable Replacer: Failed to parse replace_nbt for item replacement: {}", itemReplacement.replaceNbt, e);
                     }

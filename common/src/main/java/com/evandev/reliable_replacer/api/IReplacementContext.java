@@ -3,7 +3,7 @@ package com.evandev.reliable_replacer.api;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,12 +21,12 @@ public interface IReplacementContext {
     /**
      * @return The ID of the dimension (e.g., "minecraft:overworld").
      */
-    ResourceLocation getDimensionId();
+    Identifier getDimensionId();
 
     /**
      * @return The ID of the biome at the current position.
      */
-    ResourceLocation getBiomeId();
+    Identifier getBiomeId();
 
     /**
      * Gets a block state at a specific position (usually for neighbor checks).

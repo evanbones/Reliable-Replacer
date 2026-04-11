@@ -24,7 +24,7 @@ public class ReliableReplacerMod {
         neoBus.addListener(this::onServerAboutToStart);
         neoBus.addListener(this::onServerStopped);
 
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.getDist().isClient()) {
             ClientConfigSetup.register(ModLoadingContext.get().getActiveContainer());
         }
     }

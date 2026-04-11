@@ -5,12 +5,13 @@ import com.evandev.reliable_replacer.logic.RuleManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resources.ResourceLocation;
+import net.fabricmc.fabric.api.resource.v1.reloader.ResourceReloaderKeys;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,8 +35,8 @@ public class ReliableReplacerMod implements ModInitializer {
     private static class FabricReloadListener implements SimpleSynchronousResourceReloadListener {
 
         @Override
-        public ResourceLocation getFabricId() {
-            return ResourceLocation.fromNamespaceAndPath("reliable_replacer", "reload_listener");
+        public @NonNull Identifier getFabricId() {
+            return Identifier.fromNamespaceAndPath("reliable_replacer", "reload_listener");
         }
 
         @Override
@@ -49,8 +50,8 @@ public class ReliableReplacerMod implements ModInitializer {
         }
 
         @Override
-        public Collection<ResourceLocation> getFabricDependencies() {
-            return Collections.singletonList(ResourceReloadListenerKeys.TAGS);
+        public @NonNull Collection<Identifier> getFabricDependencies() {
+            return Collections.singletonList(ResourceReloaderKeys.AFTER_VANILLA);
         }
     }
 }

@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
@@ -56,27 +56,27 @@ public class ChunkRuleCache {
         }
 
         StructureManager structureManager = sl.structureManager();
-        Registry<Structure> structRegistry = sl.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        Registry<Structure> structRegistry = sl.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-        ChunkAccess chunk = level.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.STRUCTURE_REFERENCES);
+        ChunkAccess chunk = level.getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.STRUCTURE_REFERENCES);
 
         List<BoundingBox> boxes = new ArrayList<>();
         Map<Structure, LongSet> references = chunk.getAllReferences();
 
-        for (ResourceLocation rl : rule.parsedStructures) {
+        for (Identifier rl : rule.parsedStructures) {
             if (structRegistry.containsKey(rl)) {
-                Structure structure = structRegistry.get(rl);
+                Structure structure = structRegistry.getValue(rl);
                 if (structure != null && references.containsKey(structure)) {
                     LongSet refs = references.get(structure);
 
                     for (long packedChunkPos : refs) {
-                        ChunkPos structChunkPos = new ChunkPos(packedChunkPos);
+                        ChunkPos structChunkPos = new ChunkPos(ChunkPos.getX(packedChunkPos), ChunkPos.getZ(packedChunkPos));
                         SectionPos startPos = SectionPos.of(structChunkPos, 0);
 
                         StructureStart start = structureManager.getStartForStructure(
                                 startPos,
                                 structure,
-                                level.getChunk(structChunkPos.x, structChunkPos.z, ChunkStatus.STRUCTURE_STARTS)
+                                level.getChunk(structChunkPos.x(), structChunkPos.z(), ChunkStatus.STRUCTURE_STARTS)
                         );
 
                         if (start != null && start.isValid()) {

@@ -4,10 +4,10 @@ plugins {
 }
 
 configurations {
-    commonJava{
+    commonJava {
         canBeResolved = true
     }
-    commonResources{
+    commonResources {
         canBeResolved = true
     }
 }
@@ -16,6 +16,10 @@ dependencies {
     compileOnly(project(':common')) {
         capabilities {
             requireCapability "$group:$mod_id"
+        }
+        def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+        attributes {
+            attribute(loaderAttribute, 'common')
         }
     }
     commonJava project(path: ':common', configuration: 'commonJava')
@@ -32,10 +36,17 @@ processResources {
     from(configurations.commonResources)
 }
 
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
 publishMods {
     changelog = rootProject.file("CHANGELOG-LATEST.md").text
-    type = STABLE
-    version = "${project.version}-${project.name}-${minecraft_version}"
+    type = BETA
+    version = "${project.version}-${minecraft_version}-${project.name}"
     displayName = "${mod_name} ${project.name.capitalize()} ${minecraft_version} - ${project.version}"
     modLoaders.add(project.name)
 

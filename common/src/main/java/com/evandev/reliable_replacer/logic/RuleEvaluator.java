@@ -8,7 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
@@ -56,7 +56,7 @@ public class RuleEvaluator {
                 BlockPos neighborPos = ctx.getPos().relative(dir);
                 BlockState neighborState = ctx.getBlockState(neighborPos);
                 String reqId = entry.getValue();
-                ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
+                Identifier neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
 
                 if (!neighborId.toString().equals(reqId)) {
                     if (reqId.endsWith(":*")) {
@@ -90,13 +90,13 @@ public class RuleEvaluator {
 
         // Dimension Check
         if (rule.parsedDimensions != null && !rule.parsedDimensions.isEmpty()) {
-            ResourceLocation dimId = ctx.getDimensionId();
+            Identifier dimId = ctx.getDimensionId();
             if (dimId != null && !rule.parsedDimensions.contains(dimId)) return false;
         }
 
         // Biome Check
         if (rule.parsedBiomes != null && !rule.parsedBiomes.isEmpty()) {
-            ResourceLocation biomeId = ctx.getBiomeId();
+            Identifier biomeId = ctx.getBiomeId();
             if (biomeId == null || !rule.parsedBiomes.contains(biomeId)) return false;
         }
 

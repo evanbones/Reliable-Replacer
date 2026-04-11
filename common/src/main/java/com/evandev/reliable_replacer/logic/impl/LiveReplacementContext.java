@@ -8,8 +8,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.Level;
@@ -31,12 +31,12 @@ public class LiveReplacementContext implements IReplacementContext {
     @Nullable
     private final ChunkRuleCache ruleCache;
     private BlockPos pos;
-    private ResourceLocation cachedBiomeId;
+    private Identifier cachedBiomeId;
     private int lastBiomeX = Integer.MIN_VALUE;
     private int lastBiomeY = Integer.MIN_VALUE;
     private int lastBiomeZ = Integer.MIN_VALUE;
 
-    private ResourceLocation cachedDimId;
+    private Identifier cachedDimId;
     private boolean dimIdComputed = false;
 
     public LiveReplacementContext(LevelAccessor level, BlockPos pos, BlockPos spawnPos,
@@ -78,14 +78,14 @@ public class LiveReplacementContext implements IReplacementContext {
     }
 
     @Override
-    public ResourceLocation getDimensionId() {
+    public Identifier getDimensionId() {
         if (!dimIdComputed) {
             if (level instanceof ServerLevel sl) {
-                cachedDimId = sl.dimension().location();
+                cachedDimId = sl.dimension().identifier();
             } else if (level instanceof WorldGenRegion wgr) {
-                cachedDimId = wgr.getLevel().dimension().location();
+                cachedDimId = wgr.getLevel().dimension().identifier();
             } else if (level instanceof Level l) {
-                cachedDimId = l.dimension().location();
+                cachedDimId = l.dimension().identifier();
             }
             dimIdComputed = true;
         }
@@ -109,7 +109,7 @@ public class LiveReplacementContext implements IReplacementContext {
     }
 
     @Override
-    public ResourceLocation getBiomeId() {
+    public Identifier getBiomeId() {
         int qX = pos.getX() >> 2;
         int qY = pos.getY() >> 2;
         int qZ = pos.getZ() >> 2;
@@ -122,7 +122,7 @@ public class LiveReplacementContext implements IReplacementContext {
                 biomeHolder = level.getBiome(pos);
             }
 
-            cachedBiomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
+            cachedBiomeId = biomeHolder.unwrapKey().map(ResourceKey::identifier).orElse(null);
             lastBiomeX = qX;
             lastBiomeY = qY;
             lastBiomeZ = qZ;
@@ -140,11 +140,11 @@ public class LiveReplacementContext implements IReplacementContext {
 
         if (level instanceof ServerLevel sl) {
             StructureManager structureManager = sl.structureManager();
-            Registry<Structure> structRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+            Registry<Structure> structRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-            for (ResourceLocation rl : rule.parsedStructures) {
+            for (Identifier rl : rule.parsedStructures) {
                 if (structRegistry.containsKey(rl)) {
-                    Structure structure = structRegistry.get(rl);
+                    Structure structure = structRegistry.getValue(rl);
                     if (structure != null && structureManager.getStructureAt(pos, structure).isValid()) {
                         return true;
                     }

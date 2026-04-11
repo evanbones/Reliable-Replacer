@@ -1,5 +1,6 @@
 package com.evandev.reliable_replacer.util;
 
+import com.evandev.reliable_replacer.Constants;
 import com.evandev.reliable_replacer.data.ItemReplacement;
 import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.core.BlockPos;
@@ -7,12 +8,14 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.storage.TagValueInput;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,8 +58,14 @@ public class BlockUtil {
             CompoundTag currentTag = blockEntityNbt;
 
             for (int i = 0; i < path.length - 1; i++) {
-                if (currentTag.contains(path[i], Tag.TAG_COMPOUND)) {
-                    currentTag = currentTag.getCompound(path[i]);
+                if (currentTag.contains(path[i])) {
+                    java.util.Optional<CompoundTag> opt = currentTag.getCompound(path[i]);
+                    if (opt.isPresent()) {
+                        currentTag = opt.get();
+                    } else {
+                        currentTag = null;
+                        break;
+                    }
                 } else {
                     currentTag = null;
                     break;
@@ -66,21 +75,21 @@ public class BlockUtil {
             if (currentTag == null) continue;
             String targetKey = path[path.length - 1];
 
-            if (currentTag.contains(targetKey, Tag.TAG_LIST)) {
-                ListTag listTag = currentTag.getList(targetKey, Tag.TAG_COMPOUND);
-                for (int i = 0; i < listTag.size(); i++) {
-                    CompoundTag itemTag = listTag.getCompound(i);
-                    replaceItemInTag(itemTag, replacement);
+            if (currentTag.contains(targetKey)) {
+                ListTag listTag = currentTag.getListOrEmpty(targetKey);
+                if (!listTag.isEmpty()) {
+                    for (int i = 0; i < listTag.size(); i++) {
+                        listTag.getCompound(i).ifPresent(itemTag -> replaceItemInTag(itemTag, replacement));
+                    }
+                } else {
+                    currentTag.getCompound(targetKey).ifPresent(itemTag -> replaceItemInTag(itemTag, replacement));
                 }
-            } else if (currentTag.contains(targetKey, Tag.TAG_COMPOUND)) {
-                CompoundTag itemTag = currentTag.getCompound(targetKey);
-                replaceItemInTag(itemTag, replacement);
             }
         }
     }
 
     private static void replaceItemInTag(CompoundTag itemTag, ItemReplacement replacement) {
-        if (itemTag.getString("id").matches(replacement.match_id.replace("*", ".*"))) {
+        if (itemTag.getStringOr("id", "").matches(replacement.match_id.replace("*", ".*"))) {
 
             if (replacement.probability != null && ThreadLocalRandom.current().nextFloat() > replacement.probability) {
                 return;
@@ -89,10 +98,20 @@ public class BlockUtil {
             itemTag.putString("id", replacement.replace_id);
 
             if (replacement.parsedReplaceNbt != null) {
-                if (!itemTag.contains("tag", Tag.TAG_COMPOUND)) {
+                if (!itemTag.contains("tag")) {
                     itemTag.put("tag", new CompoundTag());
                 }
-                itemTag.getCompound("tag").merge(replacement.parsedReplaceNbt);
+                itemTag.getCompound("tag").ifPresent(tag -> {
+                    for (String key : replacement.parsedReplaceNbt.keySet()) {
+                        try {
+                            Tag val = replacement.parsedReplaceNbt.get(key);
+                            if (val != null) {
+                                tag.put(key, val.copy());
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    }
+                });
             }
         }
     }
@@ -138,7 +157,9 @@ public class BlockUtil {
 
                 applyItemReplacements(finalNbt, itemReplacements);
 
-                newBlockEntity.loadWithComponents(finalNbt, level.registryAccess());
+                try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
+                    newBlockEntity.loadCustomOnly(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
+                }
                 newBlockEntity.setChanged();
 
                 level.sendBlockUpdated(pos, currentState, replacement, flags);
@@ -155,9 +176,9 @@ public class BlockUtil {
         BlockState currentState = currentChunk.getBlockState(pos);
         boolean stateChanged = !currentState.equals(state);
 
-        if (cx == currentChunk.getPos().x && cz == currentChunk.getPos().z) {
+        if (cx == currentChunk.getPos().x() && cz == currentChunk.getPos().z()) {
             if (stateChanged) {
-                currentChunk.setBlockState(pos, state, false);
+                currentChunk.setBlockState(pos, state);
             }
             if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                 BlockEntity be = currentChunk.getBlockEntity(pos);
@@ -184,7 +205,9 @@ public class BlockUtil {
                 applyItemReplacements(finalNbt, itemReplacements);
 
                 if (be != null) {
-                    be.loadWithComponents(finalNbt, level.registryAccess());
+                    try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
+                        be.loadCustomOnly(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
+                    }
                 } else {
                     currentChunk.setBlockEntityNbt(finalNbt);
                 }
@@ -208,7 +231,9 @@ public class BlockUtil {
                         }
 
                         applyItemReplacements(finalNbt, itemReplacements);
-                        be.loadWithComponents(finalNbt, level.registryAccess());
+                        try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
+                            be.loadCustomOnly(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
+                        }
                     }
                 }
             } catch (Exception ignored) {

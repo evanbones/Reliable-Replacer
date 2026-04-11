@@ -24,7 +24,7 @@ public abstract class LevelMixin {
     private static final ThreadLocal<Boolean> reliableReplacer$isReplacing = ThreadLocal.withInitial(() -> false);
 
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z", at = @At("HEAD"), cancellable = true)
-    private void onSetBlock(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<Boolean> cir) {
+    private void onSetBlock(BlockPos pos, BlockState blockState, int updateFlags, CallbackInfoReturnable<Boolean> cir) {
         List<BlockPos> queuedPositions = RuleManager.LIVE_PLACEMENT_QUEUE.get();
         if (queuedPositions != null) {
             queuedPositions.add(pos.immutable());
@@ -40,13 +40,13 @@ public abstract class LevelMixin {
 
         BlockPos spawnPos;
         try {
-            spawnPos = level.getSharedSpawnPos();
+            spawnPos = level.getRespawnData().globalPos().pos();
         } catch (NullPointerException e) {
             return;
         }
 
         LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
-        ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
+        ReplacementResult result = RuleManager.getReplacementResult(blockState, ctx, true);
 
         if (result != null) {
             BlockState replacement = result.state();
@@ -54,21 +54,21 @@ public abstract class LevelMixin {
             boolean hasCustomNbt = result.customNbt() != null;
             boolean hasItemReplacements = result.itemReplacements() != null && !result.itemReplacements().isEmpty();
 
-            if (!replacement.equals(state) || hasAdditionalBlocks || hasCustomNbt || hasItemReplacements) {
+            if (!replacement.equals(blockState) || hasAdditionalBlocks || hasCustomNbt || hasItemReplacements) {
                 reliableReplacer$isReplacing.set(true);
                 try {
                     boolean success = false;
-                    if (!replacement.equals(state) || hasCustomNbt || hasItemReplacements) {
-                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), flags);
+                    if (!replacement.equals(blockState) || hasCustomNbt || hasItemReplacements) {
+                        success = BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), updateFlags);
                     }
 
                     if (hasAdditionalBlocks) {
                         for (var entry : result.additionalBlocks().entrySet()) {
                             BlockPos addPos = entry.getKey();
                             CompoundTag addNbt = result.additionalNbt().get(addPos);
-                            BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, null, flags);
+                            BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, null, updateFlags);
                         }
-                        if (replacement.equals(state) && !hasCustomNbt && !hasItemReplacements) success = true;
+                        if (replacement.equals(blockState) && !hasCustomNbt && !hasItemReplacements) success = true;
                     }
 
                     if (success) {

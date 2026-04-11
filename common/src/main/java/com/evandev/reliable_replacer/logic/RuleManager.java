@@ -10,10 +10,7 @@ import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.mixin.minecraft.ChunkMapAccessor;
 import com.evandev.reliable_replacer.platform.Services;
 import com.evandev.reliable_replacer.systems.RetrogenHandler;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -35,7 +32,7 @@ import java.util.stream.Stream;
 
 public class RuleManager {
     public static final ThreadLocal<List<BlockPos>> LIVE_PLACEMENT_QUEUE = new ThreadLocal<>();
-    private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder().setStrictness(Strictness.LENIENT).setPrettyPrinting().create();
     private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile boolean HAS_AIR_RULES = false;
@@ -93,7 +90,7 @@ public class RuleManager {
         if (server != null) {
             for (ServerLevel level : server.getAllLevels()) {
                 ChunkMapAccessor map = (ChunkMapAccessor) level.getChunkSource().chunkMap;
-                for (ChunkHolder holder : map.reliableReplacer$getChunks()) {
+                for (ChunkHolder holder : map.reliableReplacer$getVisibleChunkMap().values()) {
                     LevelChunk chunk = holder.getTickingChunk();
                     if (chunk != null) {
                         ((IProcessedChunk) chunk).reliableReplacer$setDirty(true);

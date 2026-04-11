@@ -29,7 +29,7 @@ public class WorldgenHandler {
 
         ChunkPos chunkPos = chunk.getPos();
         LevelData levelData = levelAccessor.getLevelData();
-        BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
+        BlockPos spawnPos = new BlockPos(levelData.getRespawnData().globalPos().pos());
 
         ChunkRuleCache cache = new ChunkRuleCache(levelAccessor, chunkPos);
         LiveReplacementContext ctx = new LiveReplacementContext(levelAccessor, new BlockPos(0, 0, 0), spawnPos, false, chunk, cache);

@@ -1,19 +1,23 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
 import com.evandev.reliable_replacer.config.ModConfig;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.ValueInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Map;
@@ -27,52 +31,56 @@ public class StructureTemplateMixin {
         Map<String, String> remapper = ModConfig.get().missingIdMap;
         if (remapper == null || remapper.isEmpty()) return;
 
-        if (tag.contains("palette", Tag.TAG_LIST)) {
-            ListTag palette = tag.getList("palette", Tag.TAG_COMPOUND);
+        if (tag.contains("palette")) {
+            ListTag palette = tag.getListOrEmpty("palette");
             for (int i = 0; i < palette.size(); i++) {
-                CompoundTag entry = palette.getCompound(i);
-                String name = entry.getString("Name");
-                if (remapper.containsKey(name)) {
-                    entry.putString("Name", remapper.get(name));
-                }
+                palette.getCompound(i).ifPresent(entry -> {
+                    String name = entry.getStringOr("Name", "");
+                    if (!name.isEmpty() && remapper.containsKey(name)) {
+                        entry.putString("Name", remapper.get(name));
+                    }
+                });
             }
         }
 
-        if (tag.contains("palettes", Tag.TAG_LIST)) {
-            ListTag palettes = tag.getList("palettes", Tag.TAG_LIST);
+        if (tag.contains("palettes")) {
+            ListTag palettes = tag.getListOrEmpty("palettes");
             for (int i = 0; i < palettes.size(); i++) {
-                ListTag palette = palettes.getList(i);
-                for (int j = 0; j < palette.size(); j++) {
-                    CompoundTag entry = palette.getCompound(j);
-                    String name = entry.getString("Name");
-                    if (remapper.containsKey(name)) {
-                        entry.putString("Name", remapper.get(name));
+                palettes.getList(i).ifPresent(palette -> {
+                    for (int j = 0; j < palette.size(); j++) {
+                        palette.getCompound(j).ifPresent(entry -> {
+                            String name = entry.getStringOr("Name", "");
+                            if (!name.isEmpty() && remapper.containsKey(name)) {
+                                entry.putString("Name", remapper.get(name));
+                            }
+                        });
                     }
-                }
+                });
             }
         }
     }
 
-    @ModifyArg(
+    @WrapOperation(
             method = "placeInWorld",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/block/entity/BlockEntity;loadWithComponents(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V"
-            ),
-            index = 0
+                    target = "Lnet/minecraft/world/level/block/entity/BlockEntity;loadWithComponents(Lnet/minecraft/world/level/storage/ValueInput;)V"
+            )
     )
-    private CompoundTag reliableReplacer$fixNbtId(CompoundTag tag, @Local BlockEntity instance) {
-        if (instance == null) return tag;
+    private void reliableReplacer$fixNbtId(BlockEntity instance, ValueInput input, Operation<Void> original, @Local(name = "blockInfo") StructureTemplate.StructureBlockInfo blockInfo, @Local(name = "level") ServerLevelAccessor level) {
+        if (instance != null && blockInfo.nbt() != null) {
+            String worldTileId = Objects.requireNonNull(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(instance.getType())).toString();
+            String nbtTileId = blockInfo.nbt().getStringOr("id", "");
 
-        String worldTileId = Objects.requireNonNull(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(instance.getType())).toString();
-        String nbtTileId = tag.getString("id");
+            if (!worldTileId.equals(nbtTileId)) {
+                CompoundTag newTag = blockInfo.nbt().copy();
+                newTag.putString("id", worldTileId);
 
-        if (!worldTileId.equals(nbtTileId)) {
-            CompoundTag newTag = tag.copy();
-            newTag.putString("id", worldTileId);
-            return newTag;
+                try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(com.evandev.reliable_replacer.Constants.LOG)) {
+                    input = TagValueInput.create(reporter, level.registryAccess(), newTag);
+                }
+            }
         }
-
-        return tag;
+        original.call(instance, input);
     }
 }

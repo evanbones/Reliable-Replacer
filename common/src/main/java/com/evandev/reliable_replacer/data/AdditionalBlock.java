@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +42,7 @@ public class AdditionalBlock {
             nbtParsed = true;
             if (outputNbt != null && !outputNbt.trim().isEmpty()) {
                 try {
-                    parsedOutputNbt = TagParser.parseTag(outputNbt);
+                    parsedOutputNbt = TagParser.parseCompoundFully(outputNbt);
                 } catch (Exception ignored) {
                 }
             }
@@ -79,8 +79,8 @@ public class AdditionalBlock {
                 } else {
                     outputBlocks = new ArrayList<>();
                     for (String outStr : combinedOutputs) {
-                        ResourceLocation id = ResourceLocation.tryParse(outStr);
-                        outputBlocks.add(id != null ? BuiltInRegistries.BLOCK.get(id) : Blocks.AIR);
+                        Identifier id = Identifier.tryParse(outStr);
+                        outputBlocks.add(id != null ? BuiltInRegistries.BLOCK.getValue(id) : Blocks.AIR);
                     }
                 }
             }

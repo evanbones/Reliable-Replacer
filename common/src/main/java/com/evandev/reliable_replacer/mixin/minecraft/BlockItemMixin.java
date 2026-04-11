@@ -25,19 +25,19 @@ import java.util.List;
 public class BlockItemMixin {
 
     @Inject(method = "place", at = @At("HEAD"))
-    private void reliableReplacer$onPlaceStart(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
+    private void reliableReplacer$onPlaceStart(BlockPlaceContext placeContext, CallbackInfoReturnable<InteractionResult> cir) {
         RuleManager.LIVE_PLACEMENT_QUEUE.set(new ArrayList<>());
     }
 
     @Inject(method = "place", at = @At("RETURN"))
-    private void reliableReplacer$onBlockPlaced(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
+    private void reliableReplacer$onBlockPlaced(BlockPlaceContext placeContext, CallbackInfoReturnable<InteractionResult> cir) {
         List<BlockPos> positions = RuleManager.LIVE_PLACEMENT_QUEUE.get();
         RuleManager.LIVE_PLACEMENT_QUEUE.remove();
 
         if (cir.getReturnValue() != InteractionResult.FAIL && RuleManager.HAS_LIVE_RULES && ModConfig.get().enabled) {
-            Level level = context.getLevel();
+            Level level = placeContext.getLevel();
             LevelData levelData = level.getLevelData();
-            BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
+            BlockPos spawnPos = new BlockPos(levelData.getRespawnData().globalPos().pos());
 
             if (positions != null && !positions.isEmpty()) {
                 for (BlockPos pos : positions) {

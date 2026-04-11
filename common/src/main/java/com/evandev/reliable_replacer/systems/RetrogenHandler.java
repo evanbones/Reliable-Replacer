@@ -27,7 +27,7 @@ public class RetrogenHandler {
         }
 
         Level level = chunk.getLevel();
-        BlockPos spawnPos = level.getSharedSpawnPos();
+        BlockPos spawnPos = level.getRespawnData().globalPos().pos();
 
         ChunkRuleCache cache = new ChunkRuleCache(level, chunk.getPos());
         LiveReplacementContext ctx = new LiveReplacementContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk, cache);
@@ -69,7 +69,7 @@ public class RetrogenHandler {
         access.reliableReplacer$setDirty(false);
 
         if (changed.get() && level instanceof ServerLevel) {
-            chunk.setUnsaved(true);
+            chunk.markUnsaved();
         }
     }
 }
