@@ -1,4 +1,3 @@
-### Added
+### Fixed
 
-- Added NBT replacement inside inventories.
-- Added logic for item randomization with NBT replacement.
+- Fixed issues with swapping block entities.
