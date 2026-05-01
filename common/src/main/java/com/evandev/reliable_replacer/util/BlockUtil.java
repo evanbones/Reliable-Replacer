@@ -7,8 +7,10 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -100,11 +102,11 @@ public class BlockUtil {
     public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, CompoundTag customNbt, List<ItemReplacement> itemReplacements, int flags) {
         CompoundTag nbtData = null;
 
-        if (keepNbt) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be != null) {
-                nbtData = be.saveWithoutMetadata();
-            }
+        BlockEntity be = level.getBlockEntity(pos);
+
+        if (keepNbt && be != null) {
+            nbtData = be.saveWithoutMetadata();
+            Clearable.tryClear(be);
         }
 
         boolean success;
@@ -135,43 +137,62 @@ public class BlockUtil {
                     customCopy.remove("z");
                     finalNbt.merge(customCopy);
                 }
-
                 applyItemReplacements(finalNbt, itemReplacements);
-
                 newBlockEntity.load(finalNbt);
                 newBlockEntity.setChanged();
-
                 level.sendBlockUpdated(pos, currentState, replacement, flags);
             }
         }
-
         return success;
     }
 
-    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, CompoundTag customNbt, List<ItemReplacement> itemReplacements) {
+    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, boolean keepNbt, CompoundTag customNbt, List<ItemReplacement> itemReplacements) {
         int cx = pos.getX() >> 4;
         int cz = pos.getZ() >> 4;
-
         BlockState currentState = currentChunk.getBlockState(pos);
         boolean stateChanged = !currentState.equals(state);
+
+        CompoundTag nbtData = null;
+        if (keepNbt) {
+            BlockEntity oldBe = currentChunk.getBlockEntity(pos);
+            if (oldBe != null) {
+                nbtData = oldBe.saveWithoutMetadata();
+
+                Clearable.tryClear(oldBe);
+            } else {
+                CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos);
+                if (deferredNbt != null) {
+                    nbtData = deferredNbt.copy();
+                }
+            }
+        }
 
         if (cx == currentChunk.getPos().x && cz == currentChunk.getPos().z) {
             if (stateChanged) {
                 currentChunk.setBlockState(pos, state, false);
-            }
-            if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
-                BlockEntity be = currentChunk.getBlockEntity(pos);
-                CompoundTag finalNbt = new CompoundTag();
 
-                if (be != null) {
-                    finalNbt = be.saveWithoutMetadata();
-                } else {
-                    CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos);
-                    if (deferredNbt != null) {
-                        finalNbt = deferredNbt.copy();
+                if (state.hasBlockEntity() && state.getBlock() instanceof EntityBlock entityBlock) {
+                    BlockEntity newBe = entityBlock.newBlockEntity(pos, state);
+                    if (newBe != null) {
+                        currentChunk.setBlockEntity(newBe);
                     }
                 }
+            }
 
+            if (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
+                BlockEntity be = currentChunk.getBlockEntity(pos);
+                CompoundTag finalNbt = new CompoundTag();
+                if (be != null) {
+                    finalNbt = be.saveWithoutMetadata();
+                }
+
+                if (nbtData != null) {
+                    nbtData.remove("id");
+                    nbtData.remove("x");
+                    nbtData.remove("y");
+                    nbtData.remove("z");
+                    finalNbt.merge(nbtData);
+                }
                 if (customNbt != null) {
                     CompoundTag copy = customNbt.copy();
                     copy.putInt("x", pos.getX());
@@ -180,13 +201,14 @@ public class BlockUtil {
                     copy.remove("id");
                     finalNbt.merge(copy);
                 }
-
                 applyItemReplacements(finalNbt, itemReplacements);
 
                 if (be != null) {
                     be.load(finalNbt);
                 } else {
-                    currentChunk.setBlockEntityNbt(finalNbt);
+                    if (finalNbt.contains("id")) {
+                        currentChunk.setBlockEntityNbt(finalNbt);
+                    }
                 }
             }
         } else {
@@ -194,10 +216,17 @@ public class BlockUtil {
                 if (stateChanged) {
                     level.setBlock(pos, state, 50);
                 }
-                if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
+                if (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
                         CompoundTag finalNbt = be.saveWithoutMetadata();
+                        if (nbtData != null) {
+                            nbtData.remove("id");
+                            nbtData.remove("x");
+                            nbtData.remove("y");
+                            nbtData.remove("z");
+                            finalNbt.merge(nbtData);
+                        }
                         if (customNbt != null) {
                             CompoundTag copy = customNbt.copy();
                             copy.remove("id");
@@ -206,7 +235,6 @@ public class BlockUtil {
                             copy.remove("z");
                             finalNbt.merge(copy);
                         }
-
                         applyItemReplacements(finalNbt, itemReplacements);
                         be.load(finalNbt);
                     }
