@@ -48,16 +48,15 @@ public class WorldgenHandler {
                 boolean hasItemReplacements = result.itemReplacements() != null && !result.itemReplacements().isEmpty();
 
                 if (replacement != original || hasCustomNbt || hasItemReplacements) {
-                    BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement, result.customNbt(), result.itemReplacements());
+                    BlockUtil.safeSetBlock(levelAccessor, chunk, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements());
                     modifiedPositions.add(pos.immutable());
                 }
-
                 if (result.additionalBlocks() != null && !result.additionalBlocks().isEmpty()) {
                     for (var entry : result.additionalBlocks().entrySet()) {
                         BlockPos addPos = entry.getKey();
                         BlockState addState = entry.getValue();
                         CompoundTag addNbt = result.additionalNbt().get(addPos);
-                        BlockUtil.safeSetBlock(levelAccessor, chunk, addPos, addState, addNbt, null);
+                        BlockUtil.safeSetBlock(levelAccessor, chunk, addPos, addState, false, addNbt, null);
                         modifiedPositions.add(addPos.immutable());
                     }
                 }

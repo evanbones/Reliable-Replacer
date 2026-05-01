@@ -7,10 +7,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -27,13 +28,14 @@ public class BlockUtil {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         int chunkStartX = chunk.getPos().getMinBlockX();
         int chunkStartZ = chunk.getPos().getMinBlockZ();
+
         LevelChunkSection[] sections = chunk.getSections();
         boolean processAir = RuleManager.HAS_AIR_RULES;
 
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
-
             if (section == null || (section.hasOnlyAir() && !processAir)) continue;
+
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
 
             for (int y = 0; y < 16; y++) {
@@ -59,13 +61,8 @@ public class BlockUtil {
 
             for (int i = 0; i < path.length - 1; i++) {
                 if (currentTag.contains(path[i])) {
-                    java.util.Optional<CompoundTag> opt = currentTag.getCompound(path[i]);
-                    if (opt.isPresent()) {
-                        currentTag = opt.get();
-                    } else {
-                        currentTag = null;
-                        break;
-                    }
+                    currentTag = currentTag.getCompound(path[i]).orElse(null);
+                    if (currentTag == null) break;
                 } else {
                     currentTag = null;
                     break;
@@ -73,24 +70,22 @@ public class BlockUtil {
             }
 
             if (currentTag == null) continue;
+
             String targetKey = path[path.length - 1];
 
             if (currentTag.contains(targetKey)) {
                 ListTag listTag = currentTag.getListOrEmpty(targetKey);
-                if (!listTag.isEmpty()) {
-                    for (int i = 0; i < listTag.size(); i++) {
-                        listTag.getCompound(i).ifPresent(itemTag -> replaceItemInTag(itemTag, replacement));
-                    }
-                } else {
-                    currentTag.getCompound(targetKey).ifPresent(itemTag -> replaceItemInTag(itemTag, replacement));
+                for (int i = 0; i < listTag.size(); i++) {
+                    listTag.getCompound(i).ifPresent(itemTag -> replaceItemInTag(itemTag, replacement));
                 }
+            } else {
+                currentTag.getCompound(targetKey).ifPresent(itemTag -> replaceItemInTag(itemTag, replacement));
             }
         }
     }
 
     private static void replaceItemInTag(CompoundTag itemTag, ItemReplacement replacement) {
         if (itemTag.getStringOr("id", "").matches(replacement.match_id.replace("*", ".*"))) {
-
             if (replacement.probability != null && ThreadLocalRandom.current().nextFloat() > replacement.probability) {
                 return;
             }
@@ -98,20 +93,9 @@ public class BlockUtil {
             itemTag.putString("id", replacement.replace_id);
 
             if (replacement.parsedReplaceNbt != null) {
-                if (!itemTag.contains("tag")) {
-                    itemTag.put("tag", new CompoundTag());
-                }
-                itemTag.getCompound("tag").ifPresent(tag -> {
-                    for (String key : replacement.parsedReplaceNbt.keySet()) {
-                        try {
-                            Tag val = replacement.parsedReplaceNbt.get(key);
-                            if (val != null) {
-                                tag.put(key, val.copy());
-                            }
-                        } catch (Exception ignored) {
-                        }
-                    }
-                });
+                CompoundTag tag = itemTag.getCompound("tag").orElse(new CompoundTag());
+                tag.merge(replacement.parsedReplaceNbt);
+                itemTag.put("tag", tag);
             }
         }
     }
@@ -119,10 +103,11 @@ public class BlockUtil {
     public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, CompoundTag customNbt, List<ItemReplacement> itemReplacements, int flags) {
         CompoundTag nbtData = null;
 
-        if (keepNbt) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be != null) {
-                nbtData = be.saveWithoutMetadata(level.registryAccess());
+        BlockEntity be = level.getBlockEntity(pos);
+        if (keepNbt && be != null) {
+            nbtData = be.saveWithoutMetadata(level.registryAccess());
+            if (be instanceof Clearable clearable) {
+                clearable.clearContent();
             }
         }
 
@@ -139,6 +124,7 @@ public class BlockUtil {
             BlockEntity newBlockEntity = level.getBlockEntity(pos);
             if (newBlockEntity != null) {
                 CompoundTag finalNbt = newBlockEntity.saveWithoutMetadata(level.registryAccess());
+
                 if (nbtData != null) {
                     nbtData.remove("id");
                     nbtData.remove("x");
@@ -146,6 +132,7 @@ public class BlockUtil {
                     nbtData.remove("z");
                     finalNbt.merge(nbtData);
                 }
+
                 if (customNbt != null) {
                     CompoundTag customCopy = customNbt.copy();
                     customCopy.remove("id");
@@ -158,39 +145,63 @@ public class BlockUtil {
                 applyItemReplacements(finalNbt, itemReplacements);
 
                 try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
-                    newBlockEntity.loadCustomOnly(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
+                    newBlockEntity.loadWithComponents(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
                 }
                 newBlockEntity.setChanged();
 
                 level.sendBlockUpdated(pos, currentState, replacement, flags);
             }
         }
-
         return success;
     }
 
-    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, CompoundTag customNbt, List<ItemReplacement> itemReplacements) {
+    public static void safeSetBlock(LevelAccessor level, ChunkAccess currentChunk, BlockPos pos, BlockState state, boolean keepNbt, CompoundTag customNbt, List<ItemReplacement> itemReplacements) {
         int cx = pos.getX() >> 4;
         int cz = pos.getZ() >> 4;
-
         BlockState currentState = currentChunk.getBlockState(pos);
         boolean stateChanged = !currentState.equals(state);
 
+        CompoundTag nbtData = null;
+        if (keepNbt) {
+            BlockEntity oldBe = currentChunk.getBlockEntity(pos);
+            if (oldBe != null) {
+                nbtData = oldBe.saveWithoutMetadata(level.registryAccess());
+                if (oldBe instanceof Clearable clearable) {
+                    clearable.clearContent();
+                }
+            } else {
+                CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos, level.registryAccess());
+                if (deferredNbt != null) {
+                    nbtData = deferredNbt.copy();
+                }
+            }
+        }
+
         if (cx == currentChunk.getPos().x() && cz == currentChunk.getPos().z()) {
             if (stateChanged) {
-                currentChunk.setBlockState(pos, state);
+                currentChunk.setBlockState(pos, state, 0);
+
+                if (state.hasBlockEntity() && state.getBlock() instanceof EntityBlock entityBlock) {
+                    BlockEntity newBe = entityBlock.newBlockEntity(pos, state);
+                    if (newBe != null) {
+                        currentChunk.setBlockEntity(newBe);
+                    }
+                }
             }
-            if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
+
+            if (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                 BlockEntity be = currentChunk.getBlockEntity(pos);
                 CompoundTag finalNbt = new CompoundTag();
-
                 if (be != null) {
                     finalNbt = be.saveWithoutMetadata(level.registryAccess());
-                } else {
-                    CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos, level.registryAccess());
-                    if (deferredNbt != null) {
-                        finalNbt = deferredNbt.copy();
-                    }
+                }
+
+                if (nbtData != null) {
+                    nbtData.remove("id");
+                    nbtData.remove("x");
+                    nbtData.remove("y");
+                    nbtData.remove("z");
+                    finalNbt.merge(nbtData);
                 }
 
                 if (customNbt != null) {
@@ -206,10 +217,12 @@ public class BlockUtil {
 
                 if (be != null) {
                     try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
-                        be.loadCustomOnly(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
+                        be.loadWithComponents(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
                     }
                 } else {
-                    currentChunk.setBlockEntityNbt(finalNbt);
+                    if (finalNbt.contains("id")) {
+                        currentChunk.setBlockEntityNbt(finalNbt);
+                    }
                 }
             }
         } else {
@@ -217,10 +230,17 @@ public class BlockUtil {
                 if (stateChanged) {
                     level.setBlock(pos, state, 50);
                 }
-                if (customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
+                if (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
                         CompoundTag finalNbt = be.saveWithoutMetadata(level.registryAccess());
+                        if (nbtData != null) {
+                            nbtData.remove("id");
+                            nbtData.remove("x");
+                            nbtData.remove("y");
+                            nbtData.remove("z");
+                            finalNbt.merge(nbtData);
+                        }
                         if (customNbt != null) {
                             CompoundTag copy = customNbt.copy();
                             copy.remove("id");
@@ -229,10 +249,9 @@ public class BlockUtil {
                             copy.remove("z");
                             finalNbt.merge(copy);
                         }
-
                         applyItemReplacements(finalNbt, itemReplacements);
                         try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
-                            be.loadCustomOnly(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
+                            be.loadWithComponents(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
                         }
                     }
                 }
