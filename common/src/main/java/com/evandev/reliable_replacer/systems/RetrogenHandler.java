@@ -55,6 +55,8 @@ public class RetrogenHandler {
                 if (result.additionalBlocks() != null && !result.additionalBlocks().isEmpty()) {
                     for (var entry : result.additionalBlocks().entrySet()) {
                         BlockPos addPos = entry.getKey();
+                        if (!level.isLoaded(addPos)) continue;
+
                         BlockState addState = entry.getValue();
                         CompoundTag addNbt = result.additionalNbt().get(addPos);
                         BlockUtil.swapBlockWithNbt(level, addPos, addState, false, addNbt, null, 50);

@@ -7,6 +7,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.level.Level;
@@ -101,20 +103,20 @@ public class BlockUtil {
     }
 
     public static boolean swapBlockWithNbt(Level level, BlockPos pos, BlockState replacement, boolean keepNbt, CompoundTag customNbt, List<ItemReplacement> itemReplacements, int flags) {
+        BlockState currentState = level.getBlockState(pos);
+        boolean stateChanged = !currentState.equals(replacement);
         CompoundTag nbtData = null;
 
         BlockEntity be = level.getBlockEntity(pos);
         if (keepNbt && be != null) {
             nbtData = be.saveWithoutMetadata(level.registryAccess());
-            if (be instanceof Clearable clearable) {
+            if (stateChanged && be instanceof Clearable clearable) {
                 clearable.clearContent();
             }
         }
 
         boolean success;
-        BlockState currentState = level.getBlockState(pos);
-
-        if (currentState.equals(replacement)) {
+        if (!stateChanged) {
             success = true;
         } else {
             success = level.setBlock(pos, replacement, flags);
@@ -166,7 +168,7 @@ public class BlockUtil {
             BlockEntity oldBe = currentChunk.getBlockEntity(pos);
             if (oldBe != null) {
                 nbtData = oldBe.saveWithoutMetadata(level.registryAccess());
-                if (oldBe instanceof Clearable clearable) {
+                if (stateChanged && oldBe instanceof Clearable clearable) {
                     clearable.clearContent();
                 }
             } else {
@@ -219,7 +221,7 @@ public class BlockUtil {
                     try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
                         be.loadWithComponents(TagValueInput.create(reporter, level.registryAccess(), finalNbt));
                     }
-                } else {
+                } else if (state.hasBlockEntity() || state.getBlock() instanceof EntityBlock) {
                     if (finalNbt.contains("id")) {
                         currentChunk.setBlockEntityNbt(finalNbt);
                     }
@@ -227,6 +229,9 @@ public class BlockUtil {
             }
         } else {
             try {
+                if (level instanceof ServerLevel sl && !sl.isLoaded(pos)) return;
+                if (level instanceof WorldGenRegion wgr && !wgr.hasChunk(cx, cz)) return;
+
                 if (stateChanged) {
                     level.setBlock(pos, state, 50);
                 }

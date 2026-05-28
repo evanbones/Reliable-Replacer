@@ -44,19 +44,19 @@ public class ChunkRuleCache {
     }
 
     private List<BoundingBox> computeBoxes(ReplacementRule rule) {
-        ServerLevel sl = null;
-        if (level instanceof ServerLevel s) {
-            sl = s;
+        ServerLevel serverLevel = null;
+        if (level instanceof ServerLevel currentLevel) {
+            serverLevel = currentLevel;
         } else if (level instanceof WorldGenRegion wgr) {
-            sl = wgr.getLevel();
+            serverLevel = wgr.getLevel();
         }
 
-        if (sl == null) {
+        if (serverLevel == null) {
             return Collections.emptyList();
         }
 
-        StructureManager structureManager = sl.structureManager();
-        Registry<Structure> structRegistry = sl.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        StructureManager structureManager = serverLevel.structureManager();
+        Registry<Structure> structRegistry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
         ChunkAccess chunk = level.getChunk(chunkPos.x(), chunkPos.z(), ChunkStatus.STRUCTURE_REFERENCES);
 
@@ -76,7 +76,7 @@ public class ChunkRuleCache {
                         StructureStart start = structureManager.getStartForStructure(
                                 startPos,
                                 structure,
-                                level.getChunk(structChunkPos.x(), structChunkPos.z(), ChunkStatus.STRUCTURE_STARTS)
+                                serverLevel.getChunk(structChunkPos.x(), structChunkPos.z(), ChunkStatus.STRUCTURE_STARTS)
                         );
 
                         if (start != null && start.isValid()) {

@@ -8,7 +8,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
@@ -21,9 +20,40 @@ public class RuleEvaluator {
             return false;
         }
 
+        BlockPos pos = ctx.getPos();
+        BlockPos spawn = ctx.getSpawnPos();
+
+        // Coordinate Checks
+        int x = pos.getX();
+        int y = pos.getY();
+        int z = pos.getZ();
+
+        if (!RuleEvaluator.checkRange(x, rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
+                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, spawn.getX())) return false;
+        if (!RuleEvaluator.checkRange(y, rule.cachedMinY, rule.cachedMinYOffset, rule.minY,
+                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, spawn.getY())) return false;
+        if (!RuleEvaluator.checkRange(z, rule.cachedMinZ, rule.cachedMinZOffset, rule.minZ,
+                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, spawn.getZ())) return false;
+
+        // Dimension Check
+        if (rule.parsedDimensions != null && !rule.parsedDimensions.isEmpty()) {
+            var dimId = ctx.getDimensionId();
+            if (dimId != null && !rule.parsedDimensions.contains(dimId)) return false;
+        }
+
+        // Biome Check
+        if (rule.parsedBiomes != null && !rule.parsedBiomes.isEmpty()) {
+            var biomeId = ctx.getBiomeId();
+            if (biomeId == null || !rule.parsedBiomes.contains(biomeId)) return false;
+        }
+
+        // Structure Check
+        if (rule.parsedStructures != null && !rule.parsedStructures.isEmpty()) {
+            if (!ctx.matchesStructure(rule)) return false;
+        }
+
         // Probability Check
         if (rule.probability != null) {
-            BlockPos pos = ctx.getPos();
             long seed = pos.getX() * 3129871L ^ pos.getY() * 116129781L ^ pos.getZ() * 3812423L;
             float rng = new Random(seed).nextFloat();
             if (rng > rule.probability) return false;
@@ -39,14 +69,6 @@ public class RuleEvaluator {
             }
         }
 
-        // Input NBT Check
-        if (rule.parsedInputNbt != null) {
-            CompoundTag actualNbt = ctx.getBlockEntityNbt(ctx.getPos());
-            if (actualNbt == null || !NbtUtils.compareNbt(rule.parsedInputNbt, actualNbt, true)) {
-                return false;
-            }
-        }
-
         // Neighbor Check
         if (!rule.neighbors.isEmpty()) {
             for (Map.Entry<String, String> entry : rule.neighbors.entrySet()) {
@@ -56,7 +78,7 @@ public class RuleEvaluator {
                 BlockPos neighborPos = ctx.getPos().relative(dir);
                 BlockState neighborState = ctx.getBlockState(neighborPos);
                 String reqId = entry.getValue();
-                Identifier neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
+                var neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
 
                 if (!neighborId.toString().equals(reqId)) {
                     if (reqId.endsWith(":*")) {
@@ -69,40 +91,10 @@ public class RuleEvaluator {
             }
         }
 
-        // Coordinate Checks
-        BlockPos pos = ctx.getPos();
-        BlockPos spawn = ctx.getSpawnPos();
-        int x = pos.getX();
-        int y = pos.getY();
-        int z = pos.getZ();
-        int sx = spawn.getX();
-        int sy = spawn.getY();
-        int sz = spawn.getZ();
-
-        if (!RuleEvaluator.checkRange(x, rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
-                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, sx)) return false;
-
-        if (!RuleEvaluator.checkRange(y, rule.cachedMinY, rule.cachedMinYOffset, rule.minY,
-                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, sy)) return false;
-
-        if (!RuleEvaluator.checkRange(z, rule.cachedMinZ, rule.cachedMinZOffset, rule.minZ,
-                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, sz)) return false;
-
-        // Dimension Check
-        if (rule.parsedDimensions != null && !rule.parsedDimensions.isEmpty()) {
-            Identifier dimId = ctx.getDimensionId();
-            if (dimId != null && !rule.parsedDimensions.contains(dimId)) return false;
-        }
-
-        // Biome Check
-        if (rule.parsedBiomes != null && !rule.parsedBiomes.isEmpty()) {
-            Identifier biomeId = ctx.getBiomeId();
-            if (biomeId == null || !rule.parsedBiomes.contains(biomeId)) return false;
-        }
-
-        // Structure Check
-        if (rule.parsedStructures != null && !rule.parsedStructures.isEmpty()) {
-            return ctx.matchesStructure(rule);
+        // Input NBT Check
+        if (rule.parsedInputNbt != null) {
+            CompoundTag actualNbt = ctx.getBlockEntityNbt(ctx.getPos());
+            return actualNbt != null && NbtUtils.compareNbt(rule.parsedInputNbt, actualNbt, true);
         }
 
         return true;

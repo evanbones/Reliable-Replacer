@@ -122,7 +122,9 @@ public class LiveReplacementContext implements IReplacementContext {
                 biomeHolder = level.getBiome(pos);
             }
 
-            cachedBiomeId = biomeHolder.unwrapKey().map(ResourceKey::identifier).orElse(null);
+            var keyOpt = biomeHolder.unwrapKey();
+            cachedBiomeId = keyOpt.map(ResourceKey::identifier).orElse(null);
+
             lastBiomeX = qX;
             lastBiomeY = qY;
             lastBiomeZ = qZ;

@@ -220,6 +220,8 @@ public class ReplacementRule {
         parseToCache(minZ, v -> cachedMinZ = v, v -> cachedMinZOffset = v);
         parseToCache(maxZ, v -> cachedMaxZ = v, v -> cachedMaxZOffset = v);
 
+        this.getOutputBlocks();
+
         if (not != null) not.resolveBlocks();
         if (additionalBlocks != null) {
             for (AdditionalBlock ab : additionalBlocks) {
