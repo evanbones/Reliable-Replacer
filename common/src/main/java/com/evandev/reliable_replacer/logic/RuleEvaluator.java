@@ -13,60 +13,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
 import java.util.Map;
-import java.util.Random;
 
 public class RuleEvaluator {
     public static boolean checkRule(ReplacementRule rule, BlockState original, IReplacementContext ctx) {
+        // Quick Match
         if (!rule.getInputBlocks().isEmpty() && !rule.getInputBlocks().contains(original.getBlock())) {
             return false;
-        }
-
-        // Probability Check
-        if (rule.probability != null) {
-            BlockPos pos = ctx.getPos();
-            long seed = pos.getX() * 3129871L ^ pos.getY() * 116129781L ^ pos.getZ() * 3812423L;
-            float rng = new Random(seed).nextFloat();
-            if (rng > rule.probability) return false;
-        }
-
-        // State Properties Check
-        if (!rule.stateProperties.isEmpty()) {
-            for (Map.Entry<String, String> entry : rule.stateProperties.entrySet()) {
-                Property<?> prop = original.getBlock().getStateDefinition().getProperty(entry.getKey());
-                if (prop == null) return false;
-                String actualValue = original.getValue(prop).toString();
-                if (!actualValue.equals(entry.getValue())) return false;
-            }
-        }
-
-        // Input NBT Check
-        if (rule.parsedInputNbt != null) {
-            CompoundTag actualNbt = ctx.getBlockEntityNbt(ctx.getPos());
-            if (actualNbt == null || !NbtUtils.compareNbt(rule.parsedInputNbt, actualNbt, true)) {
-                return false;
-            }
-        }
-
-        // Neighbor Check
-        if (!rule.neighbors.isEmpty()) {
-            for (Map.Entry<String, String> entry : rule.neighbors.entrySet()) {
-                Direction dir = Direction.byName(entry.getKey());
-                if (dir == null) continue;
-
-                BlockPos neighborPos = ctx.getPos().relative(dir);
-                BlockState neighborState = ctx.getBlockState(neighborPos);
-                String reqId = entry.getValue();
-                ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
-
-                if (!neighborId.toString().equals(reqId)) {
-                    if (reqId.endsWith(":*")) {
-                        String namespace = reqId.split(":")[0];
-                        if (!neighborId.getNamespace().equals(namespace)) return false;
-                    } else {
-                        return false;
-                    }
-                }
-            }
         }
 
         // Coordinate Checks
@@ -75,18 +27,13 @@ public class RuleEvaluator {
         int x = pos.getX();
         int y = pos.getY();
         int z = pos.getZ();
-        int sx = spawn.getX();
-        int sy = spawn.getY();
-        int sz = spawn.getZ();
 
         if (!RuleEvaluator.checkRange(x, rule.cachedMinX, rule.cachedMinXOffset, rule.minX,
-                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, sx)) return false;
-
+                rule.cachedMaxX, rule.cachedMaxXOffset, rule.maxX, spawn.getX())) return false;
         if (!RuleEvaluator.checkRange(y, rule.cachedMinY, rule.cachedMinYOffset, rule.minY,
-                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, sy)) return false;
-
+                rule.cachedMaxY, rule.cachedMaxYOffset, rule.maxY, spawn.getY())) return false;
         if (!RuleEvaluator.checkRange(z, rule.cachedMinZ, rule.cachedMinZOffset, rule.minZ,
-                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, sz)) return false;
+                rule.cachedMaxZ, rule.cachedMaxZOffset, rule.maxZ, spawn.getZ())) return false;
 
         // Dimension Check
         if (rule.parsedDimensions != null && !rule.parsedDimensions.isEmpty()) {
@@ -102,7 +49,51 @@ public class RuleEvaluator {
 
         // Structure Check
         if (rule.parsedStructures != null && !rule.parsedStructures.isEmpty()) {
-            return ctx.matchesStructure(rule);
+            if (!ctx.matchesStructure(rule)) return false;
+        }
+
+        // Probability Check
+        if (rule.probability != null) {
+            long seed = pos.asLong();
+            float rng = (Math.abs(seed * 3129871L ^ 116129781L) % 10000) / 10000f;
+            if (rng > rule.probability) return false;
+        }
+
+        // State Properties Check
+        if (!rule.stateProperties.isEmpty()) {
+            for (Map.Entry<String, String> entry : rule.stateProperties.entrySet()) {
+                Property<?> prop = original.getBlock().getStateDefinition().getProperty(entry.getKey());
+                if (prop == null) return false;
+                String actualValue = original.getValue(prop).toString();
+                if (!actualValue.equals(entry.getValue())) return false;
+            }
+        }
+
+        // Neighbor Check
+        if (!rule.neighbors.isEmpty()) {
+            for (Map.Entry<String, String> entry : rule.neighbors.entrySet()) {
+                Direction dir = Direction.byName(entry.getKey());
+                if (dir == null) continue;
+                BlockPos neighborPos = pos.relative(dir);
+                BlockState neighborState = ctx.getBlockState(neighborPos);
+                String reqId = entry.getValue();
+                ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
+
+                if (!neighborId.toString().equals(reqId)) {
+                    if (reqId.endsWith(":*")) {
+                        String namespace = reqId.split(":")[0];
+                        if (!neighborId.getNamespace().equals(namespace)) return false;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Input NBT Check
+        if (rule.parsedInputNbt != null) {
+            CompoundTag actualNbt = ctx.getBlockEntityNbt(pos);
+            return actualNbt != null && NbtUtils.compareNbt(rule.parsedInputNbt, actualNbt, true);
         }
 
         return true;

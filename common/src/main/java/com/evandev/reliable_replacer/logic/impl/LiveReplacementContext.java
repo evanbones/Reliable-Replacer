@@ -8,7 +8,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -16,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -69,6 +69,26 @@ public class LiveReplacementContext implements IReplacementContext {
 
     @Override
     public BlockState getBlockState(BlockPos targetPos) {
+        if (chunk != null) {
+            int cx = targetPos.getX() >> 4;
+            int cz = targetPos.getZ() >> 4;
+            if (cx == chunk.getPos().x && cz == chunk.getPos().z) {
+                return chunk.getBlockState(targetPos);
+            }
+        }
+
+        if (level instanceof ServerLevel sl) {
+            if (!sl.isLoaded(targetPos)) {
+                return Blocks.VOID_AIR.defaultBlockState();
+            }
+        } else if (level instanceof WorldGenRegion wgr) {
+            int cx = targetPos.getX() >> 4;
+            int cz = targetPos.getZ() >> 4;
+            if (!wgr.hasChunk(cx, cz)) {
+                return Blocks.VOID_AIR.defaultBlockState();
+            }
+        }
+
         return level.getBlockState(targetPos);
     }
 
@@ -122,7 +142,9 @@ public class LiveReplacementContext implements IReplacementContext {
                 biomeHolder = level.getBiome(pos);
             }
 
-            cachedBiomeId = biomeHolder.unwrapKey().map(ResourceKey::location).orElse(null);
+            var keyOpt = biomeHolder.unwrapKey();
+            cachedBiomeId = keyOpt.isPresent() ? keyOpt.get().location() : null;
+
             lastBiomeX = qX;
             lastBiomeY = qY;
             lastBiomeZ = qZ;
