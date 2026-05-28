@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 public class RuleManager {
     public static final ThreadLocal<List<BlockPos>> LIVE_PLACEMENT_QUEUE = new ThreadLocal<>();
     private static final Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
-    private static final Map<Block, Map<Integer, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Block, Map<String, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile boolean HAS_AIR_RULES = false;
     public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
@@ -176,31 +176,49 @@ public class RuleManager {
     }
 
     private static BlockState createReplacementState(BlockState original, ReplacementRule rule, BlockPos pos) {
-        long seed = pos.asLong();
-        Random rand = new Random(seed);
-
         List<Block> outputBlocks = rule.getOutputBlocks();
-        Block outputBlock;
 
         if (outputBlocks == null || outputBlocks.isEmpty()) {
-            outputBlock = original.getBlock();
-        } else {
-            outputBlock = outputBlocks.get(rand.nextInt(outputBlocks.size()));
+            BlockState newState = original;
+
+            if (rule.outputStateProperties != null && !rule.outputStateProperties.isEmpty()) {
+                for (Map.Entry<String, String> entry : rule.outputStateProperties.entrySet()) {
+                    Property<?> prop = newState.getBlock().getStateDefinition().getProperty(entry.getKey());
+                    if (prop != null) {
+                        newState = setPropertyFromString(newState, prop, entry.getValue());
+                    }
+                }
+            }
+
+            if (rule.randomizeProperties != null && !rule.randomizeProperties.isEmpty()) {
+                Random rand = new Random(pos.asLong());
+                for (String propName : rule.randomizeProperties) {
+                    Property<?> prop = newState.getBlock().getStateDefinition().getProperty(propName);
+                    if (prop != null) {
+                        newState = randomizeProperty(newState, prop, rand);
+                    }
+                }
+            }
+            return newState;
         }
+
+        boolean needsRandom = outputBlocks.size() > 1 || (rule.randomizeProperties != null && !rule.randomizeProperties.isEmpty());
+        Random rand = needsRandom ? new Random(pos.asLong()) : null;
+        Block outputBlock = outputBlocks.size() == 1 ? outputBlocks.get(0) : outputBlocks.get(rand.nextInt(outputBlocks.size()));
 
         BlockState newState = outputBlock.defaultBlockState();
 
         if (rule.keepStates) {
-            Map<Integer, Property<?>> targetProperties = PROPERTY_CACHE.computeIfAbsent(outputBlock, block -> {
-                Map<Integer, Property<?>> map = new HashMap<>();
+            Map<String, Property<?>> targetProperties = PROPERTY_CACHE.computeIfAbsent(outputBlock, block -> {
+                Map<String, Property<?>> map = new HashMap<>();
                 for (Property<?> prop : block.defaultBlockState().getProperties()) {
-                    map.put(prop.generateHashCode(), prop);
+                    map.put(prop.getName(), prop);
                 }
                 return map;
             });
 
             for (Property<?> prop : original.getProperties()) {
-                Property<?> targetProp = targetProperties.get(prop.generateHashCode());
+                Property<?> targetProp = targetProperties.get(prop.getName());
                 if (targetProp != null) {
                     newState = copyProperty(original, newState, targetProp);
                 }
@@ -264,16 +282,22 @@ public class RuleManager {
     private static <T extends Comparable<T>> BlockState copyProperty(BlockState from, BlockState to, Property<T> targetProperty) {
         for (Property<?> originalProp : from.getProperties()) {
             if (originalProp.getName().equals(targetProperty.getName())) {
-                try {
-                    String valueString = from.getValue(originalProp).toString();
-                    Optional<T> parsedValue = targetProperty.getValue(valueString);
-
-                    if (parsedValue.isPresent()) {
-                        return to.setValue(targetProperty, parsedValue.get());
-                    }
-                } catch (Exception ignored) {
-                }
+                return copyPropertyTyped(from, to, originalProp, targetProperty);
             }
+        }
+        return to;
+    }
+
+    private static <O extends Comparable<O>, T extends Comparable<T>> BlockState copyPropertyTyped(BlockState from, BlockState to, Property<O> originalProp, Property<T> targetProperty) {
+        try {
+            O originalValue = from.getValue(originalProp);
+            String valueString = originalProp.getName(originalValue);
+            Optional<T> parsedValue = targetProperty.getValue(valueString);
+
+            if (parsedValue.isPresent()) {
+                return to.setValue(targetProperty, parsedValue.get());
+            }
+        } catch (Exception ignored) {
         }
         return to;
     }

@@ -19,7 +19,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Mixin(BlockItem.class)
 public class BlockItemMixin {
@@ -40,7 +42,9 @@ public class BlockItemMixin {
             BlockPos spawnPos = new BlockPos(levelData.getSpawnPos());
 
             if (positions != null && !positions.isEmpty()) {
-                for (BlockPos pos : positions) {
+                Set<BlockPos> uniquePositions = new LinkedHashSet<>(positions);
+
+                for (BlockPos pos : uniquePositions) {
                     BlockState state = level.getBlockState(pos);
                     LiveReplacementContext ctx = new LiveReplacementContext(level, pos, spawnPos, false, null, null);
                     ReplacementResult result = RuleManager.getReplacementResult(state, ctx, true);
