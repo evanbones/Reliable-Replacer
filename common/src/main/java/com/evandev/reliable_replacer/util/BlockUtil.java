@@ -181,6 +181,7 @@ public class BlockUtil {
 
         if (cx == currentChunk.getPos().x() && cz == currentChunk.getPos().z()) {
             if (stateChanged) {
+                currentChunk.removeBlockEntity(pos);
                 currentChunk.setBlockState(pos, state, 0);
 
                 if (state.hasBlockEntity() && state.getBlock() instanceof EntityBlock entityBlock) {
