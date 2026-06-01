@@ -24,7 +24,7 @@ public class FeatureMixin {
         int cz = origin.getZ() >> 4;
         if (level.hasChunk(cx, cz)) {
             var biomeOpt = level.getBiome(origin).unwrapKey();
-            biomeOpt.ifPresent(biomeResourceKey -> RuleManager.ACTIVE_FEATURE_BIOME.set(biomeResourceKey.identifier()));
+            biomeOpt.ifPresent(biomeResourceKey -> RuleManager.ACTIVE_FEATURE_BIOME.set(biomeResourceKey.location()));
         }
     }
 
