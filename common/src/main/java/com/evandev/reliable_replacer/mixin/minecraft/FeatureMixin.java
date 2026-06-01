@@ -20,8 +20,12 @@ public class FeatureMixin {
             at = @At("HEAD")
     )
     private void reliableReplacer$onFeaturePlaceStart(FeatureConfiguration config, WorldGenLevel level, ChunkGenerator chunkGenerator, RandomSource random, BlockPos origin, CallbackInfoReturnable<Boolean> cir) {
-        var biomeOpt = level.getBiome(origin).unwrapKey();
-        biomeOpt.ifPresent(biomeResourceKey -> RuleManager.ACTIVE_FEATURE_BIOME.set(biomeResourceKey.identifier()));
+        int cx = origin.getX() >> 4;
+        int cz = origin.getZ() >> 4;
+        if (level.hasChunk(cx, cz)) {
+            var biomeOpt = level.getBiome(origin).unwrapKey();
+            biomeOpt.ifPresent(biomeResourceKey -> RuleManager.ACTIVE_FEATURE_BIOME.set(biomeResourceKey.identifier()));
+        }
     }
 
     @Inject(
