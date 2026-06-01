@@ -124,6 +124,12 @@ public class LiveReplacementContext implements IReplacementContext {
             // Fallback for chunks during generation that have deferred NBT
             return chunk.getBlockEntityNbtForSaving(targetPos);
         } else {
+            int cx = targetPos.getX() >> 4;
+            int cz = targetPos.getZ() >> 4;
+            if (!level.hasChunk(cx, cz)) {
+                return null;
+            }
+
             BlockEntity be = level.getBlockEntity(targetPos);
             if (be != null) return be.saveWithoutMetadata();
             return null;
@@ -149,6 +155,11 @@ public class LiveReplacementContext implements IReplacementContext {
             if (chunk != null) {
                 biomeHolder = chunk.getNoiseBiome(qX, qY, qZ);
             } else {
+                int cx = pos.getX() >> 4;
+                int cz = pos.getZ() >> 4;
+                if (!level.hasChunk(cx, cz)) {
+                    return null;
+                }
                 biomeHolder = level.getBiome(pos);
             }
 
