@@ -3,11 +3,13 @@ package com.evandev.reliable_replacer.logic.impl;
 import com.evandev.reliable_replacer.api.IReplacementContext;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.logic.ChunkRuleCache;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -130,6 +132,14 @@ public class LiveReplacementContext implements IReplacementContext {
 
     @Override
     public ResourceLocation getBiomeId() {
+        // If a tree/feature is generating, pretend all its blocks belong to the biome where it started
+        if (this.level instanceof WorldGenRegion) {
+            ResourceLocation featureBiome = RuleManager.ACTIVE_FEATURE_BIOME.get();
+            if (featureBiome != null) {
+                return featureBiome;
+            }
+        }
+
         int qX = pos.getX() >> 2;
         int qY = pos.getY() >> 2;
         int qZ = pos.getZ() >> 2;
@@ -143,7 +153,7 @@ public class LiveReplacementContext implements IReplacementContext {
             }
 
             var keyOpt = biomeHolder.unwrapKey();
-            cachedBiomeId = keyOpt.isPresent() ? keyOpt.get().location() : null;
+            cachedBiomeId = keyOpt.map(ResourceKey::location).orElse(null);
 
             lastBiomeX = qX;
             lastBiomeY = qY;

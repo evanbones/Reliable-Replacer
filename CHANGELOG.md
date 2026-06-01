@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-06-01
+
+### Fixed
+
+- Fixed issues with feature blocks not swapping across chunk boundaries.
+- Fudged tree biomes at biome borders, so now leaf replacements (for example) will evaluate as true as
+  long as the trunk is in the targeted biome.
+
 ## [1.5.1] - 2026-05-28
 
 ### Fixed
