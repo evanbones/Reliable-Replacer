@@ -3,6 +3,7 @@ package com.evandev.reliable_replacer.logic.impl;
 import com.evandev.reliable_replacer.api.IReplacementContext;
 import com.evandev.reliable_replacer.data.ReplacementRule;
 import com.evandev.reliable_replacer.logic.ChunkRuleCache;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -69,6 +71,26 @@ public class LiveReplacementContext implements IReplacementContext {
 
     @Override
     public BlockState getBlockState(BlockPos targetPos) {
+        if (chunk != null) {
+            int cx = targetPos.getX() >> 4;
+            int cz = targetPos.getZ() >> 4;
+            if (cx == chunk.getPos().x() && cz == chunk.getPos().z()) {
+                return chunk.getBlockState(targetPos);
+            }
+        }
+
+        if (level instanceof ServerLevel sl) {
+            if (!sl.isLoaded(targetPos)) {
+                return Blocks.VOID_AIR.defaultBlockState();
+            }
+        } else if (level instanceof WorldGenRegion wgr) {
+            int cx = targetPos.getX() >> 4;
+            int cz = targetPos.getZ() >> 4;
+            if (!wgr.hasChunk(cx, cz)) {
+                return Blocks.VOID_AIR.defaultBlockState();
+            }
+        }
+
         return level.getBlockState(targetPos);
     }
 
@@ -110,6 +132,14 @@ public class LiveReplacementContext implements IReplacementContext {
 
     @Override
     public Identifier getBiomeId() {
+        // If a tree/feature is generating, pretend all its blocks belong to the biome where it started
+        if (this.level instanceof WorldGenRegion) {
+            Identifier featureBiome = RuleManager.ACTIVE_FEATURE_BIOME.get();
+            if (featureBiome != null) {
+                return featureBiome;
+            }
+        }
+
         int qX = pos.getX() >> 2;
         int qY = pos.getY() >> 2;
         int qZ = pos.getZ() >> 2;

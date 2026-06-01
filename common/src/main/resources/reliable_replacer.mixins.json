@@ -8,11 +8,13 @@
     "minecraft.ChunkAccessMixin",
     "minecraft.ChunkGeneratorMixin",
     "minecraft.ChunkMapAccessor",
+    "minecraft.FeatureMixin",
     "minecraft.LevelMixin",
     "minecraft.MinecraftServerMixin",
     "minecraft.SerializableChunkDataMixin",
     "minecraft.ServerLevelMixin",
-    "minecraft.StructureTemplateMixin"
+    "minecraft.StructureTemplateMixin",
+    "minecraft.WorldGenRegionMixin"
   ],
   "client": [],
   "server": [],

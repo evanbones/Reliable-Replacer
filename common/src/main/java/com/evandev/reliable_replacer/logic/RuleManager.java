@@ -13,6 +13,7 @@ import com.evandev.reliable_replacer.systems.RetrogenHandler;
 import com.google.gson.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -31,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class RuleManager {
+    public static final ThreadLocal<Identifier> ACTIVE_FEATURE_BIOME = new ThreadLocal<>();
     public static final ThreadLocal<List<BlockPos>> LIVE_PLACEMENT_QUEUE = new ThreadLocal<>();
     private static final Gson GSON = new GsonBuilder().setStrictness(Strictness.LENIENT).setPrettyPrinting().create();
     private static final Map<Block, Map<String, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
@@ -68,7 +70,7 @@ public class RuleManager {
             rule.resolveBlocks();
 
             for (Block b : rule.getInputBlocks()) {
-                blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
+                blockMap.computeIfAbsent(b, _ -> new ArrayList<>()).add(rule);
 
                 if (rule.shouldRunPlayerBlocks()) {
                     anyLiveRules = true;
