@@ -23,8 +23,11 @@ public class FeatureMixin {
         int cx = origin.getX() >> 4;
         int cz = origin.getZ() >> 4;
         if (level.hasChunk(cx, cz)) {
-            var biomeOpt = level.getBiome(origin).unwrapKey();
-            biomeOpt.ifPresent(biomeResourceKey -> RuleManager.ACTIVE_FEATURE_BIOME.set(biomeResourceKey.location()));
+            try {
+                var biomeOpt = level.getBiome(origin).unwrapKey();
+                biomeOpt.ifPresent(biomeResourceKey -> RuleManager.ACTIVE_FEATURE_BIOME.set(biomeResourceKey.location()));
+            } catch (IllegalStateException ignored) {
+            }
         }
     }
 
