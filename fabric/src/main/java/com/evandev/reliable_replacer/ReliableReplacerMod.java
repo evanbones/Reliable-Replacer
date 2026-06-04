@@ -35,7 +35,7 @@ public class ReliableReplacerMod implements ModInitializer {
 
         @Override
         public ResourceLocation getFabricId() {
-            return ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID,, "reload_listener");
+            return ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "reload_listener");
         }
 
         @Override
