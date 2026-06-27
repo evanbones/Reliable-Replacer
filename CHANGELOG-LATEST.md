@@ -1,3 +1,3 @@
-### Fixed
+### Changed
 
-- Hopefully fixed No Man's Land crash.
+- Add support for an array of `match_ids` in Reliable Replacer.

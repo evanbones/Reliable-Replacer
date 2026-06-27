@@ -84,8 +84,22 @@ public class BlockUtil {
     }
 
     private static void replaceItemInTag(CompoundTag itemTag, ItemReplacement replacement) {
-        if (itemTag.getString("id").matches(replacement.match_id.replace("*", ".*"))) {
+        String itemId = itemTag.getString("id");
+        boolean matches = false;
 
+        if (replacement.match_id != null && itemId.matches(replacement.match_id.replace("*", ".*"))) {
+            matches = true;
+        }
+        else if (replacement.match_ids != null && !replacement.match_ids.isEmpty()) {
+            for (String id : replacement.match_ids) {
+                if (itemId.matches(id.replace("*", ".*"))) {
+                    matches = true;
+                    break;
+                }
+            }
+        }
+
+        if (matches) {
             if (replacement.probability != null && ThreadLocalRandom.current().nextFloat() > replacement.probability) {
                 return;
             }
