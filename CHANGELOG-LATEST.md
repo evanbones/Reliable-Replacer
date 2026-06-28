@@ -1,3 +1,3 @@
-### Changed
+### Fixed
 
-- Add support for an array of `match_ids` in Reliable Replacer.
+- Fixed issues with loot modification.

@@ -13,6 +13,7 @@
     "minecraft.FeatureMixin",
     "minecraft.LevelMixin",
     "minecraft.MinecraftServerMixin",
+    "minecraft.RandomizableContainerBlockEntityMixin",
     "minecraft.ServerLevelMixin",
     "minecraft.StructureTemplateMixin",
     "minecraft.WorldGenRegionMixin"
