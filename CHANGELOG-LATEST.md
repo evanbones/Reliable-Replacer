@@ -1,3 +1,4 @@
-### Fixed
+### Changed
 
-- Hopefully fixed No Man's Land crash.
+- Updated to 26.2.
+- Replaced Cloth Config with YACL for the config screen.

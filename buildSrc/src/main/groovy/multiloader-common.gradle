@@ -52,8 +52,8 @@ repositories {
     }
 
     maven {
-        name = "ClothConfig"
-        url "https://maven.shedaniel.me/"
+        name = "Xander's Maven"
+        url = "https://maven.isxander.dev/releases"
     }
 
     exclusiveContent {
@@ -121,7 +121,8 @@ processResources {
             'neoforge_version'             : neoforge_version,
             'neoforge_loader_version_range': neoforge_loader_version_range,
             'credits'                      : credits,
-            'java_version'                 : java_version
+            'java_version'                 : java_version,
+            'yacl_version'                 : yacl_version
     ]
 
     var jsonExpandProps = expandProps.collectEntries {

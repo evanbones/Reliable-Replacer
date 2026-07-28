@@ -34,5 +34,8 @@
     "fabric-api": "*",
     "minecraft": ">26 <27",
     "java": ">=25"
+  },
+  "suggests": {
+    "yet_another_config_lib_v3": "*"
   }
 }
