@@ -1,0 +1,58 @@
+---
+title: Usage
+hide_meta: true
+---
+
+### Configuration Location
+The mod watches the `./config/reliable_replacer/` folder in your instance.
+* **Auto-Generated Files**: On first launch, the mod generates `example_rules.json.disabled` (for reference) and `swapper.json` (for legacy support).
+* **Custom Files**: You can create any number of additional `.json` files in this folder.
+* **Recursive Loading**: The mod loads all JSON files found in this directory and its subdirectories.
+* **Reloading**: You can reload changes in-game using `/reload`.
+
+### Global Configuration
+Global settings are found in `config/reliable_replacer.json` or via the **YACL** menu in-game.
+
+Available options:
+* `"enabled"` (Boolean, default `true`): Master switch for the mod's features.
+* `"enable_retrogen"` (Boolean, default `true`): Global switch to toggle retro-generation block scanning on loaded chunks. When `false` (or when no active rules have retrogen enabled), retrogen chunk scans are skipped completely.
+* `"missing_id_map"` (Object): Remap missing block IDs when loading chunks or structure templates.
+
+### JSON Structure
+A rule file can contain a single rule object or an array of rule objects.
+
+**Single Rule:**
+```json
+{
+  "inputs": ["minecraft:dirt"],
+  "output": "minecraft:stone"
+}
+```
+
+**Multiple Rules:**
+
+```json
+[
+  {
+    "inputs": ["minecraft:dirt"],
+    "output": "minecraft:stone"
+  },
+  {
+    "inputs": ["minecraft:gravel"],
+    "output": "minecraft:sand"
+  }
+]
+
+```
+
+### Block Swap Format
+
+To make migrating from **Block Swap** easier, Reliable Replacer supports a simplified key-value format. You can use the auto-generated `swapper.json` or add a `"swapper"` block to any of your config files.
+
+```json
+{
+  "swapper": {
+    "oldmod:input_block": "newmod:output_block",
+    "minecraft:dirt": "minecraft:stone"
+  }
+}

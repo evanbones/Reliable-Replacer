@@ -1,0 +1,30 @@
+---
+title: Features
+hide_meta: true
+---
+
+Reliable Replacer offers the ability to modify world generation and block placement logic without requiring complex scripting.
+
+### Core Features
+
+* **Block Replacement**: Swap any block for another during world generation or retrogen.
+* **Block Swap Migration**: Natively supports the **Block Swap** configuration format for easy migration.
+* **Multi-Block Structures**: Place or remove secondary blocks at specific offsets (ideal for doors, beds, or tall grass).
+* **Namespace Filtering**: Target entire mods using wildcard syntax (e.g., replace all `farmersdelight:*` blocks).
+* **State Retention**: Automatically copy block properties (like rotation or waterlogging) from the original block to the replacement.
+* **State Filtering**: Target specific block states (e.g., only replace doors that are `open=true` or stairs that are `half=top`).
+* **NBT Filtering**: Target specific blocks with NBT (e.g. only Spider Spawners or Chests with certain items).
+* **Output State Enforcement**: Force specific properties on the replacement block (e.g., ensure all placed logs are vertical).
+* **Property Randomization**: Randomize specific properties (like rotation) for natural variation.
+* **Probabilistic Replacement**: Define a chance for a replacement to happen (e.g., 50% chance) to add variation.
+* **Retrogen**: Apply replacement rules to chunks that have already been generated when they are loaded next.
+* **Player Placement**: Apply replacement rules to any blocks that players place.
+* **NBT Item Replacements**: Selectively modify and update specific items inside lists like Inventories (Chests, Barrels, etc.) without having to replace the entire NBT object.
+
+### Context Awareness
+The mod can apply rules conditionally based on the environment:
+* **Biomes**: Only replace blocks in specific biomes.
+* **Dimensions**: Restrict rules to the Nether, End, or custom dimensions.
+* **Structures**: Apply changes only inside specific structures (e.g., Villages, Strongholds).
+* **Neighbors**: Check adjacent blocks using specific directions, directional keywords (`any`, `all`, `sides`), block IDs, tags (`#tag`), arrays, or wildcards.
+* **Coordinates**: Filter by X, Y, Z coordinates, with support for world-spawn relative positions.
