@@ -7,4 +7,7 @@ public interface IProcessedChunk {
 
     boolean reliableReplacer$isDirty();
     void reliableReplacer$setDirty(boolean dirty);
+
+    int reliableReplacer$getRulesHash();
+    void reliableReplacer$setRulesHash(int hash);
 }

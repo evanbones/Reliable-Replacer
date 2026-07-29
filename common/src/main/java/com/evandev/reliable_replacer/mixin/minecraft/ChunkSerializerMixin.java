@@ -53,6 +53,7 @@ public class ChunkSerializerMixin {
 
             if (processedChunk.reliableReplacer$hasBeenProcessed()) {
                 tag.putBoolean("ReliableReplacerProcessed", true);
+                tag.putInt("ReliableReplacerRulesHash", processedChunk.reliableReplacer$getRulesHash());
             }
             if (processedChunk.reliableReplacer$isDirty()) {
                 tag.putBoolean("ReliableReplacerDirty", true);
@@ -67,6 +68,9 @@ public class ChunkSerializerMixin {
         if (chunk instanceof IProcessedChunk processedChunk) {
             if (tag.contains("ReliableReplacerProcessed") && tag.getBoolean("ReliableReplacerProcessed")) {
                 processedChunk.reliableReplacer$markProcessed();
+                if (tag.contains("ReliableReplacerRulesHash")) {
+                    processedChunk.reliableReplacer$setRulesHash(tag.getInt("ReliableReplacerRulesHash"));
+                }
             }
 
             if (tag.contains("ReliableReplacerDirty") && tag.getBoolean("ReliableReplacerDirty")) {

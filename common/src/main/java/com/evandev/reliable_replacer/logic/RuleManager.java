@@ -42,6 +42,7 @@ public class RuleManager {
     public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile boolean HAS_AIR_RULES = false;
     public static volatile boolean HAS_RETROGEN_RULES = false;
+    public static volatile int RETROGEN_RULES_HASH = 0;
     public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
 
     public static void load(MinecraftServer server) {
@@ -70,12 +71,14 @@ public class RuleManager {
         boolean anyLiveRules = false;
         boolean anyAirRules = false;
         boolean anyRetrogenRules = false;
+        List<ReplacementRule> retrogenRules = new ArrayList<>();
 
         for (ReplacementRule rule : loadedRules) {
             rule.resolveBlocks();
 
             if (rule.shouldRunRetrogen()) {
                 anyRetrogenRules = true;
+                retrogenRules.add(rule);
             }
 
             for (Block b : rule.getInputBlocks()) {
@@ -85,7 +88,6 @@ public class RuleManager {
                     anyLiveRules = true;
                 }
 
-                // Check if this block is air
                 if (b.defaultBlockState().isAir()) {
                     anyAirRules = true;
                 }
@@ -96,6 +98,7 @@ public class RuleManager {
         HAS_LIVE_RULES = anyLiveRules;
         HAS_AIR_RULES = anyAirRules;
         HAS_RETROGEN_RULES = anyRetrogenRules;
+        RETROGEN_RULES_HASH = GSON.toJson(retrogenRules).hashCode();
 
         Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}, Retrogen active: {}", RULES_BY_BLOCK.size(), HAS_LIVE_RULES, HAS_RETROGEN_RULES && ModConfig.get().enableRetrogen);
 
