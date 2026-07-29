@@ -22,7 +22,7 @@ public class RetrogenHandler {
 
     public static void processChunk(LevelChunk chunk) {
         IProcessedChunk access = (IProcessedChunk) chunk;
-        if (!ModConfig.get().enabled || (access.reliableReplacer$hasBeenProcessed() && !access.reliableReplacer$isDirty())) {
+        if (!ModConfig.get().enabled || !ModConfig.get().enableRetrogen || !RuleManager.HAS_RETROGEN_RULES || (access.reliableReplacer$hasBeenProcessed() && !access.reliableReplacer$isDirty())) {
             return;
         }
 

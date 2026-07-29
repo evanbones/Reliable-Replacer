@@ -81,24 +81,54 @@ public class RuleEvaluator {
                 String dirStr = entry.getKey().toLowerCase(Locale.ROOT);
                 if (dirStr.equals("top")) dirStr = "up";
                 if (dirStr.equals("bottom")) dirStr = "down";
-                Direction dir = Direction.byName(dirStr);
-                if (dir == null) continue;
-
-                BlockPos neighborPos = pos.relative(dir);
-                BlockState neighborState = ctx.getBlockState(neighborPos);
-                ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
 
                 List<String> allowed = entry.getValue();
                 if (allowed == null || allowed.isEmpty()) continue;
 
-                boolean matched = false;
-                for (String reqId : allowed) {
-                    if (matchesNeighbor(neighborState, neighborId, reqId)) {
-                        matched = true;
-                        break;
+                switch (dirStr) {
+                    case "any" -> {
+                        boolean anyMatched = false;
+                        for (Direction d : Direction.values()) {
+                            if (checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                anyMatched = true;
+                                break;
+                            }
+                        }
+                        if (!anyMatched) return false;
+                    }
+                    case "all" -> {
+                        for (Direction d : Direction.values()) {
+                            if (!checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                return false;
+                            }
+                        }
+                    }
+                    case "horizontal", "sides" -> {
+                        boolean anyMatched = false;
+                        for (Direction d : Direction.Plane.HORIZONTAL) {
+                            if (checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                anyMatched = true;
+                                break;
+                            }
+                        }
+                        if (!anyMatched) return false;
+                    }
+                    case "all_horizontal", "all_sides" -> {
+                        for (Direction d : Direction.Plane.HORIZONTAL) {
+                            if (!checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                return false;
+                            }
+                        }
+                    }
+                    default -> {
+                        Direction dir = Direction.byName(dirStr);
+                        if (dir == null) continue;
+
+                        if (!checkSingleNeighbor(dir, pos, ctx, allowed)) {
+                            return false;
+                        }
                     }
                 }
-                if (!matched) return false;
             }
         }
 
@@ -149,6 +179,19 @@ public class RuleEvaluator {
             Constants.LOG.error("Invalid coordinate value in rule: {}", val);
             return Integer.MIN_VALUE;
         }
+    }
+
+    private static boolean checkSingleNeighbor(Direction dir, BlockPos pos, IReplacementContext ctx, List<String> allowed) {
+        BlockPos neighborPos = pos.relative(dir);
+        BlockState neighborState = ctx.getBlockState(neighborPos);
+        ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
+
+        for (String reqId : allowed) {
+            if (matchesNeighbor(neighborState, neighborId, reqId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean matchesNeighbor(BlockState neighborState, ResourceLocation neighborId, String reqId) {

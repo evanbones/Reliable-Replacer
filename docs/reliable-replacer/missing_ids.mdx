@@ -1,0 +1,34 @@
+---
+title: Missing IDs
+hide_meta: true
+---
+
+### **Missing ID Remapping**
+
+Reliable Replacer includes a system to handle blocks that no longer exist in your modpack (e.g., after removing a mod).
+This prevents air blocks by remapping orphaned IDs to valid blocks as chunks are loaded.
+
+#### **How it Works**
+
+Unlike standard replacement rules that run during world generation, the missing ID remapper intercepts the chunk loading process.
+It scans the chunk's block palette for specific strings and replaces them before the game attempts to resolve them into actual blocks.
+
+#### **Configuration**
+
+This feature is configured in the global configuration file located at `config/reliable_replacer.json`. Use YACL for easy editing.
+
+**Example Configuration:**
+
+```json
+{
+  "enabled": true,
+  "missing_id_map": {
+    "oldmod:deleted_block": "minecraft:stone",
+    "another_mod:missing_ore": "minecraft:deepslate"
+  }
+}
+
+```
+
+* **Key (Left side):** The exact string ID of the block that was removed (e.g., `"oldmod:deleted_block"`).
+* **Value (Right side):** The valid block ID you want to appear in its place (e.g., `"minecraft:stone"`).

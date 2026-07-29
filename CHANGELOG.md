@@ -5,11 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-28
+
+### Added
+
+- Support for direction keywords in neighbor checks (`any`, `all`, `sides`/`horizontal`, `all_sides`/`all_horizontal`).
+- Added config option to globally disable retrogen.
+
+### Changed
+
+- Switched from YACL to Cloth Config.
+
+### Fixed
+
+- Performance improvements.
+
 ## [1.5.6] - 2026-07-28
 
 ### Changed
 
-- Neighboring block checks now support arrays and tags.
+- Neighboring block checks now support block arrays, tags (`#tag`), and wildcards.
 
 ## [1.5.5] - 2026-06-04
 

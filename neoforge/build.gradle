@@ -42,8 +42,8 @@ dependencies {
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"
 
-    // Cloth Config
-    implementation "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
+    // YACL
+    implementation "maven.modrinth:yacl:${yacl_version}-neoforge"
 }
 
 publishMods {

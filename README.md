@@ -28,7 +28,7 @@ some reasons to consider switching!
     * Only replace a block if its neighbors (up, down, etc.) match a specific ID.
     * Define a percentage chance for a rule to trigger.
 * Much more flexible configuration, supporting simple JSON configuration in user-defined folders and integrating with
-  Cloth Config.
+  YACL (Yet Another Config Lib).
 * Per-rule toggleable persistence:
     * Decide if replacement blocks should inherit the properties of the old block.
 * Doesn't require any external libraries.

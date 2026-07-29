@@ -1,0 +1,242 @@
+---
+title: Advanced Replacements
+hide_meta: true
+---
+
+### Replacing Blocks with NBT Data
+
+You can replace blocks and assign them specific NBT block entity data. This is useful for changing Spawners, Chests, or Command Blocks.
+This example replaces any Blaze Spawner with a Zombie Spawner.
+
+```json
+{
+  "inputs": ["minecraft:spawner"],
+  "input_nbt": "{SpawnData:{entity:{id:\"minecraft:blaze\"}}}",
+  "output": "minecraft:spawner",
+  "output_nbt": "{SpawnData:{entity:{id:\"minecraft:zombie\"}}}"
+}
+
+```
+
+### Probabilistic Replacement
+
+Adds a 30% chance for any Stone block to become Mossy Cobblestone.
+
+```json
+{
+  "inputs": ["minecraft:stone"],
+  "output": "minecraft:mossy_cobblestone",
+  "probability": 0.3
+}
+
+```
+
+### Multi-Block Placement (Doors, Tall Grass, Beds)
+
+When placing or removing multi-block structures like doors or tall grass, use `additional_blocks` to specify the secondary blocks at relative offsets.
+This example replaces a Dandelion with a Rose Bush, placing the lower half at the original location and the upper half exactly 1 block above it.
+
+```json
+{
+  "inputs": ["minecraft:dandelion"],
+  "output": "minecraft:rose_bush",
+  "output_state_properties": {
+    "half": "lower"
+  },
+  "additional_blocks": [
+    {
+      "output": "minecraft:rose_bush",
+      "x_offset": 0,
+      "y_offset": 1,
+      "z_offset": 0,
+      "output_state_properties": {
+        "half": "upper"
+      }
+    }
+  ]
+}
+
+```
+
+### Enforcing Output States
+
+Ensure that all placed Oak Logs are vertical (axis=y), regardless of how the original block was rotated.
+
+```json
+{
+  "inputs": ["#minecraft:logs"],
+  "output": "minecraft:oak_log",
+  "output_state_properties": {
+    "axis": "y"
+  }
+}
+
+```
+
+### Random Rotation
+
+Replace Pumpkins with Carved Pumpkins, but randomize their facing direction.
+
+```json
+{
+  "inputs": ["minecraft:pumpkin"],
+  "output": "minecraft:carved_pumpkin",
+  "randomize_properties": ["facing"]
+}
+
+```
+
+### Neighbor Conditions
+
+Replaces Coarse Dirt with Grass Block, but only if there is Air directly above it.
+
+```json
+{
+  "inputs": ["minecraft:coarse_dirt"],
+  "output": "minecraft:grass_block",
+  "neighbors": {
+    "up": "minecraft:air"
+  }
+}
+
+```
+
+You can also use direction keywords (`sides`, `any`, `all`), block tags (`#tag`), and lists of blocks:
+
+```json
+{
+  "inputs": ["minecraft:stone"],
+  "output": "minecraft:mossy_cobblestone",
+  "neighbors": {
+    "sides": ["#minecraft:logs", "minecraft:water"],
+    "any": "minecraft:mossy_cobblestone"
+  }
+}
+
+```
+
+### Block State Filtering
+
+Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the bottom half (or other flowers) alone.
+
+```json
+{
+  "inputs": ["minecraft:sunflower", "minecraft:lilac"],
+  "state_properties": {
+    "half": "upper"
+  },
+  "remove": true
+}
+
+```
+
+### Coordinate Range
+
+This rule replaces all Lava with Water, but only within a 200-block radius of the world spawn on the X and Z axes.
+
+```json
+{
+  "inputs": ["minecraft:lava"],
+  "output": "minecraft:water",
+  "min_x": "spawn-200",
+  "max_x": "spawn+200",
+  "min_z": "spawn-200",
+  "max_z": "spawn+200"
+}
+
+```
+
+### Structure Modification
+
+Replace Cobblestone with Mossy Cobblestone, but only inside Jungle Temples.
+
+```json
+{
+  "inputs": ["minecraft:cobblestone"],
+  "output": "minecraft:mossy_cobblestone",
+  "structures": ["minecraft:jungle_temple"]
+}
+
+```
+
+### Inverted Conditions (Not)
+
+You can use the `not` field to apply a rule everywhere **except** in specific conditions.
+This example replaces Grass Blocks with Podzol everywhere, **except** in the Plains biome.
+
+```json
+{
+  "inputs": ["minecraft:grass_block"],
+  "output": "minecraft:podzol",
+  "not": {
+    "biomes": ["minecraft:plains"]
+  }
+}
+
+
+```
+
+### Random Output Selection
+
+You can specify a list of outputs to randomly choose from.
+This is useful for adding visual variation or handling cases where variants are split into different block IDs (rather than block states).
+
+```json
+{
+  "inputs": ["minecraft:wool"],
+  "outputs": [
+    "minecraft:red_wool",
+    "minecraft:blue_wool",
+    "minecraft:green_wool"
+  ]
+}
+
+```
+
+### Selective Item NBT Replacement
+
+Instead of replacing the entire NBT compound for a chest, you can target specific items inside its inventory to mutate. This is perfect for migrating items from removed mods or updating tools to equivalents like Tinkers Construct.
+
+This example searches any block tagged `#c:chests` for a Vanilla Iron Sword, replaces it with a Tinkers Construct sword, and applies the necessary tool data NBT without touching any other items in the chest.
+
+```json
+{
+  "inputs": ["#c:chests"],
+  "item_replacements": [
+    {
+      "list_name": "Items",
+      "match_id": "minecraft:iron_sword",
+      "replace_id": "tconstruct:sword",
+      "replace_nbt": "{tic_stats:{Damage:5.5f,AttackSpeed:1.6f}}"
+    }
+  ]
+}
+
+```
+
+You can apply a probability to individual item replacements. Because the mod evaluates item replacements from top to bottom, you can stack them with cumulative probabilities to randomize an item into one of several different outcomes independently per slot.
+
+This example randomizes wooden swords found inside a chest into either a Tinkers Construct Sword (50% chance) or a Dagger (50% chance). Each wooden sword in the chest rolls independently!
+
+```json
+{
+  "inputs": ["#c:chests"],
+  "item_replacements": [
+    {
+      "probability": 0.5,
+      "list_name": "Items",
+      "match_id": "minecraft:wooden_sword",
+      "replace_id": "tconstruct:sword",
+      "replace_nbt": "{Damage:0,tic_broken:0b,tic_materials:[\"tconstruct:iron\",\"tconstruct:wood\",\"tconstruct:wood\"]}"
+    },
+    {
+      "probability": 1.0,
+      "list_name": "Items",
+      "match_id": "minecraft:wooden_sword",
+      "replace_id": "tconstruct:dagger",
+      "replace_nbt": "{Damage:0,tic_broken:0b,tic_materials:[\"tconstruct:iron\",\"tconstruct:wood\"]}"
+    }
+  ]
+}
+
+```

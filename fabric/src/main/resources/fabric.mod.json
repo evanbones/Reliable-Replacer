@@ -34,6 +34,9 @@
     "fabric": "*",
     "minecraft": "${minecraft_version}",
     "java": ">=17"
+  },
+  "recommends": {
+    "yet_another_config_lib_v3": ">=${yacl_version}"
   }
 }
   

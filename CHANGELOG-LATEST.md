@@ -1,3 +1,12 @@
+### Added
+
+- Support for direction keywords in neighbor checks (`any`, `all`, `sides`/`horizontal`, `all_sides`/`all_horizontal`).
+- Added config option to globally disable retrogen.
+
 ### Changed
 
-- Neighboring block checks now support arrays and tags.
+- Switched from YACL to Cloth Config.
+
+### Fixed
+
+- Performance improvements.

@@ -41,6 +41,7 @@ public class RuleManager {
     private static final Map<Block, Map<String, Property<?>>> PROPERTY_CACHE = new ConcurrentHashMap<>();
     public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile boolean HAS_AIR_RULES = false;
+    public static volatile boolean HAS_RETROGEN_RULES = false;
     public static volatile Map<Block, List<ReplacementRule>> RULES_BY_BLOCK = Collections.emptyMap();
 
     public static void load(MinecraftServer server) {
@@ -68,9 +69,14 @@ public class RuleManager {
         Map<Block, List<ReplacementRule>> blockMap = new IdentityHashMap<>();
         boolean anyLiveRules = false;
         boolean anyAirRules = false;
+        boolean anyRetrogenRules = false;
 
         for (ReplacementRule rule : loadedRules) {
             rule.resolveBlocks();
+
+            if (rule.shouldRunRetrogen()) {
+                anyRetrogenRules = true;
+            }
 
             for (Block b : rule.getInputBlocks()) {
                 blockMap.computeIfAbsent(b, k -> new ArrayList<>()).add(rule);
@@ -89,10 +95,11 @@ public class RuleManager {
         RULES_BY_BLOCK = blockMap;
         HAS_LIVE_RULES = anyLiveRules;
         HAS_AIR_RULES = anyAirRules;
+        HAS_RETROGEN_RULES = anyRetrogenRules;
 
-        Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}", RULES_BY_BLOCK.size(), HAS_LIVE_RULES);
+        Constants.LOG.info("Loaded {} replacement rules. Live replacement active: {}, Retrogen active: {}", RULES_BY_BLOCK.size(), HAS_LIVE_RULES, HAS_RETROGEN_RULES && ModConfig.get().enableRetrogen);
 
-        if (server != null) {
+        if (server != null && ModConfig.get().enableRetrogen && HAS_RETROGEN_RULES) {
             for (ServerLevel level : server.getAllLevels()) {
                 ChunkMapAccessor map = (ChunkMapAccessor) level.getChunkSource().chunkMap;
                 for (ChunkHolder holder : map.reliableReplacer$getChunks()) {
