@@ -12,6 +12,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.Block;
+
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class RuleEvaluator {
@@ -71,22 +77,28 @@ public class RuleEvaluator {
 
         // Neighbor Check
         if (!rule.neighbors.isEmpty()) {
-            for (Map.Entry<String, String> entry : rule.neighbors.entrySet()) {
-                Direction dir = Direction.byName(entry.getKey());
+            for (Map.Entry<String, List<String>> entry : rule.neighbors.entrySet()) {
+                String dirStr = entry.getKey().toLowerCase(Locale.ROOT);
+                if (dirStr.equals("top")) dirStr = "up";
+                if (dirStr.equals("bottom")) dirStr = "down";
+                Direction dir = Direction.byName(dirStr);
                 if (dir == null) continue;
+
                 BlockPos neighborPos = pos.relative(dir);
                 BlockState neighborState = ctx.getBlockState(neighborPos);
-                String reqId = entry.getValue();
                 ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
 
-                if (!neighborId.toString().equals(reqId)) {
-                    if (reqId.endsWith(":*")) {
-                        String namespace = reqId.split(":")[0];
-                        if (!neighborId.getNamespace().equals(namespace)) return false;
-                    } else {
-                        return false;
+                List<String> allowed = entry.getValue();
+                if (allowed == null || allowed.isEmpty()) continue;
+
+                boolean matched = false;
+                for (String reqId : allowed) {
+                    if (matchesNeighbor(neighborState, neighborId, reqId)) {
+                        matched = true;
+                        break;
                     }
                 }
+                if (!matched) return false;
             }
         }
 
@@ -137,5 +149,34 @@ public class RuleEvaluator {
             Constants.LOG.error("Invalid coordinate value in rule: {}", val);
             return Integer.MIN_VALUE;
         }
+    }
+
+    private static boolean matchesNeighbor(BlockState neighborState, ResourceLocation neighborId, String reqId) {
+        if (reqId == null || reqId.isEmpty()) return false;
+
+        if (reqId.startsWith("#")) {
+            ResourceLocation tagRl = ResourceLocation.tryParse(reqId.substring(1));
+            if (tagRl != null) {
+                TagKey<Block> tagKey = TagKey.create(Registries.BLOCK, tagRl);
+                return neighborState.is(tagKey);
+            }
+            return false;
+        }
+
+        if (neighborId.toString().equals(reqId)) {
+            return true;
+        }
+
+        if (reqId.contains("*")) {
+            if (reqId.endsWith(":*")) {
+                String namespace = reqId.split(":")[0];
+                return neighborId.getNamespace().equals(namespace);
+            } else {
+                String regex = reqId.replace("*", ".*");
+                return neighborId.toString().matches(regex);
+            }
+        }
+
+        return false;
     }
 }

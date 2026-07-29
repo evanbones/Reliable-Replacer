@@ -1,3 +1,3 @@
-### Fixed
+### Changed
 
-- Hopefully fixed No Man's Land crash.
+- Neighboring block checks now support arrays and tags.

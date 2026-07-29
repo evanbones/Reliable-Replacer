@@ -383,10 +383,13 @@ public class RuleManager {
                          "rotation"
                      ],
                 \s
-                     "_comment_conditions": "NEIGHBORS: Only replace if surroundings match",
+                     "_comment_conditions": "NEIGHBORS: Only replace if surroundings match (single block ID, list of IDs, block tag #tag, or wildcard)",
                      "neighbors": {
                          "up": "minecraft:air",
-                         "down": "minecraft:grass_block"
+                         "down": [
+                             "minecraft:grass_block",
+                             "minecraft:dirt"
+                         ]
                      },
                 \s
                      "_comment_coords": "COORDINATES: Supports absolute numbers or worldspawn relative values.",

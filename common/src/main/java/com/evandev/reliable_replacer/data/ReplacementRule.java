@@ -1,6 +1,7 @@
 package com.evandev.reliable_replacer.data;
 
 import com.evandev.reliable_replacer.Constants;
+import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -71,7 +72,8 @@ public class ReplacementRule {
     public List<String> randomizeProperties = new ArrayList<>();
 
     @SerializedName("neighbors")
-    public Map<String, String> neighbors = new HashMap<>();
+    @JsonAdapter(NeighborsAdapter.class)
+    public Map<String, List<String>> neighbors = new HashMap<>();
     @SerializedName("probability")
     public Float probability = null;
     @SerializedName("remove")
