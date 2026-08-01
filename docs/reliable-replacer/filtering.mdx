@@ -59,9 +59,16 @@ Use the `additional_blocks` field to place or remove secondary blocks at specifi
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `biomes` | List\<String\> | List of biome IDs where this rule applies. |
-| `dimensions` | List\<String\> | List of dimension IDs (e.g., `minecraft:overworld`). |
-| `structures` | List\<String\> | List of structure IDs. The rule only runs if the block is inside one of these structures. |
+| `biomes` / `biome` | List\<String\> / String | List or single ID of biomes where this rule applies. |
+| `dimensions` / `dimension` | List\<String\> / String | List or single ID of dimensions (e.g., `minecraft:overworld`). |
+| `structures` / `structure` | List\<String\> / String | List or single ID of structures. The rule only runs if the block is inside one of these structures. |
+| `features` / `feature` | List\<String\> / String | List or single ID of worldgen feature IDs, tags, or tree types (e.g., `minecraft:oak`, `minecraft:ore_diamond_buried`, `#c:ores`). Only applies during initial world generation. |
+| `structure_radius` | Integer | Optional block radius around structure bounding boxes / pieces (Default `0`). |
+| `biome_radius` | Integer | Optional block radius around matching biomes (Default `0`). |
+| `feature_radius` | Integer | Optional block radius around feature origin / placement bounds (Default `0`). |
+| `radius` | Integer | General fallback block radius for structures, biomes, and features if specific radius is omitted. |
+
+**Note:** Large radius checks can have a hit on worldgen performance.
 
 ### Coordinates
 Coordinate fields accept simple numbers or relative text.

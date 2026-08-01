@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-31
+
+### Added
+
+- Added `radius`, `biome_radius`, `feature_radius` and `structure_radius` for filters.
+- Added `feature` to filter replacements by placed feature type.
+
+### Changed
+
+- Improved rule parsing to be more forgiving with key names.
+- Code cleanups.
+- Improve structure filtering.
+
 ## [1.6.1] - 2026-07-29
 
 ### Fixed

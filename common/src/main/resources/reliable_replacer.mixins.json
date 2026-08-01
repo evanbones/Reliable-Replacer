@@ -13,8 +13,10 @@
     "minecraft.FeatureMixin",
     "minecraft.LevelMixin",
     "minecraft.MinecraftServerMixin",
+    "minecraft.PlacedFeatureMixin",
     "minecraft.ServerLevelMixin",
     "minecraft.StructureTemplateMixin",
+    "minecraft.WorldGenRegionAccessor",
     "minecraft.WorldGenRegionMixin"
   ],
   "client": [],

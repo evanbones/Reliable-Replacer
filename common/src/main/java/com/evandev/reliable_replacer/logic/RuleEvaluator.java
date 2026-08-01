@@ -49,13 +49,17 @@ public class RuleEvaluator {
 
         // Biome Check
         if (rule.parsedBiomes != null && !rule.parsedBiomes.isEmpty()) {
-            ResourceLocation biomeId = ctx.getBiomeId();
-            if (biomeId == null || !rule.parsedBiomes.contains(biomeId)) return false;
+            if (!ctx.matchesBiome(rule)) return false;
         }
 
         // Structure Check
         if (rule.parsedStructures != null && !rule.parsedStructures.isEmpty()) {
             if (!ctx.matchesStructure(rule)) return false;
+        }
+
+        // Feature Check
+        if (rule.features != null && !rule.features.isEmpty()) {
+            if (!ctx.matchesFeature(rule)) return false;
         }
 
         // Probability Check
