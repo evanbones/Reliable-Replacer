@@ -18,6 +18,7 @@ import java.util.Set;
 public class MockReplacementContext implements IReplacementContext {
 
     private final Set<ResourceLocation> activeStructures = new HashSet<>();
+    private final Set<String> activeFeatures = new HashSet<>();
     private final Map<Direction, BlockState> neighbors = new HashMap<>();
     private BlockPos pos = BlockPos.ZERO;
     private BlockPos spawnPos = BlockPos.ZERO;
@@ -48,6 +49,11 @@ public class MockReplacementContext implements IReplacementContext {
 
     public MockReplacementContext setStructure(String structureId) {
         this.activeStructures.add(new ResourceLocation(structureId));
+        return this;
+    }
+
+    public MockReplacementContext setFeature(String featureId) {
+        this.activeFeatures.add(featureId);
         return this;
     }
 
@@ -96,6 +102,21 @@ public class MockReplacementContext implements IReplacementContext {
             }
         }
         return Blocks.AIR.defaultBlockState();
+    }
+
+    @Override
+    public boolean matchesBiome(ReplacementRule rule) {
+        if (rule.parsedBiomes == null || rule.parsedBiomes.isEmpty()) return true;
+        return biomeId != null && rule.parsedBiomes.contains(biomeId);
+    }
+
+    @Override
+    public boolean matchesFeature(ReplacementRule rule) {
+        if (rule.features == null || rule.features.isEmpty()) return false;
+        for (String needed : rule.features) {
+            if (activeFeatures.contains(needed)) return true;
+        }
+        return false;
     }
 
     @Override

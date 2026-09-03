@@ -17,13 +17,15 @@ import net.minecraft.world.level.storage.LevelData;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RetrogenHandler {
 
     public static void processChunk(LevelChunk chunk) {
         IProcessedChunk access = (IProcessedChunk) chunk;
-        if (!ModConfig.get().enabled || (access.reliableReplacer$hasBeenProcessed() && !access.reliableReplacer$isDirty())) {
+        if (!ModConfig.get().enabled || !ModConfig.get().enableRetrogen || !RuleManager.HAS_RETROGEN_RULES
+                || (access.reliableReplacer$hasBeenProcessed()
+                && access.reliableReplacer$getRulesHash() == RuleManager.RETROGEN_RULES_HASH
+                && !access.reliableReplacer$isDirty())) {
             return;
         }
 
@@ -34,7 +36,6 @@ public class RetrogenHandler {
         ChunkRuleCache cache = new ChunkRuleCache(level, chunk.getPos());
         LiveReplacementContext ctx = new LiveReplacementContext(level, new BlockPos(0, 0, 0), spawnPos, true, chunk, cache);
 
-        AtomicBoolean changed = new AtomicBoolean(false);
         Set<BlockPos> modifiedPositions = new HashSet<>();
 
         BlockUtil.processChunkBlocks(chunk, (pos, original) -> {
@@ -50,7 +51,6 @@ public class RetrogenHandler {
 
                 if (replacement != original || hasCustomNbt || hasItemReplacements) {
                     BlockUtil.swapBlockWithNbt(level, pos, replacement, result.keepNbt(), result.customNbt(), result.itemReplacements(), 50);
-                    changed.set(true);
                     modifiedPositions.add(pos.immutable());
                 }
 
@@ -62,7 +62,6 @@ public class RetrogenHandler {
                         BlockState addState = entry.getValue();
                         CompoundTag addNbt = result.additionalNbt().get(addPos);
                         BlockUtil.swapBlockWithNbt(level, addPos, addState, false, addNbt, null, 50);
-                        changed.set(true);
                         modifiedPositions.add(addPos.immutable());
                     }
                 }
@@ -70,9 +69,10 @@ public class RetrogenHandler {
         });
 
         access.reliableReplacer$markProcessed();
+        access.reliableReplacer$setRulesHash(RuleManager.RETROGEN_RULES_HASH);
         access.reliableReplacer$setDirty(false);
 
-        if (changed.get() && level instanceof ServerLevel) {
+        if (level instanceof ServerLevel) {
             chunk.setUnsaved(true);
         }
     }

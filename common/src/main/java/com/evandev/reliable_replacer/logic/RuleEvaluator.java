@@ -6,12 +6,17 @@ import com.evandev.reliable_replacer.data.ReplacementRule;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class RuleEvaluator {
@@ -43,13 +48,17 @@ public class RuleEvaluator {
 
         // Biome Check
         if (rule.parsedBiomes != null && !rule.parsedBiomes.isEmpty()) {
-            ResourceLocation biomeId = ctx.getBiomeId();
-            if (biomeId == null || !rule.parsedBiomes.contains(biomeId)) return false;
+            if (!ctx.matchesBiome(rule)) return false;
         }
 
         // Structure Check
         if (rule.parsedStructures != null && !rule.parsedStructures.isEmpty()) {
             if (!ctx.matchesStructure(rule)) return false;
+        }
+
+        // Feature Check
+        if (rule.features != null && !rule.features.isEmpty()) {
+            if (!ctx.matchesFeature(rule)) return false;
         }
 
         // Probability Check
@@ -71,20 +80,56 @@ public class RuleEvaluator {
 
         // Neighbor Check
         if (!rule.neighbors.isEmpty()) {
-            for (Map.Entry<String, String> entry : rule.neighbors.entrySet()) {
-                Direction dir = Direction.byName(entry.getKey());
-                if (dir == null) continue;
-                BlockPos neighborPos = pos.relative(dir);
-                BlockState neighborState = ctx.getBlockState(neighborPos);
-                String reqId = entry.getValue();
-                ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
+            for (Map.Entry<String, List<String>> entry : rule.neighbors.entrySet()) {
+                String dirStr = entry.getKey().toLowerCase(Locale.ROOT);
+                if (dirStr.equals("top")) dirStr = "up";
+                if (dirStr.equals("bottom")) dirStr = "down";
 
-                if (!neighborId.toString().equals(reqId)) {
-                    if (reqId.endsWith(":*")) {
-                        String namespace = reqId.split(":")[0];
-                        if (!neighborId.getNamespace().equals(namespace)) return false;
-                    } else {
-                        return false;
+                List<String> allowed = entry.getValue();
+                if (allowed == null || allowed.isEmpty()) continue;
+
+                switch (dirStr) {
+                    case "any" -> {
+                        boolean anyMatched = false;
+                        for (Direction d : Direction.values()) {
+                            if (checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                anyMatched = true;
+                                break;
+                            }
+                        }
+                        if (!anyMatched) return false;
+                    }
+                    case "all" -> {
+                        for (Direction d : Direction.values()) {
+                            if (!checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                return false;
+                            }
+                        }
+                    }
+                    case "horizontal", "sides" -> {
+                        boolean anyMatched = false;
+                        for (Direction d : Direction.Plane.HORIZONTAL) {
+                            if (checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                anyMatched = true;
+                                break;
+                            }
+                        }
+                        if (!anyMatched) return false;
+                    }
+                    case "all_horizontal", "all_sides" -> {
+                        for (Direction d : Direction.Plane.HORIZONTAL) {
+                            if (!checkSingleNeighbor(d, pos, ctx, allowed)) {
+                                return false;
+                            }
+                        }
+                    }
+                    default -> {
+                        Direction dir = Direction.byName(dirStr);
+                        if (dir == null) continue;
+
+                        if (!checkSingleNeighbor(dir, pos, ctx, allowed)) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -137,5 +182,47 @@ public class RuleEvaluator {
             Constants.LOG.error("Invalid coordinate value in rule: {}", val);
             return Integer.MIN_VALUE;
         }
+    }
+
+    private static boolean checkSingleNeighbor(Direction dir, BlockPos pos, IReplacementContext ctx, List<String> allowed) {
+        BlockPos neighborPos = pos.relative(dir);
+        BlockState neighborState = ctx.getBlockState(neighborPos);
+        ResourceLocation neighborId = BuiltInRegistries.BLOCK.getKey(neighborState.getBlock());
+
+        for (String reqId : allowed) {
+            if (matchesNeighbor(neighborState, neighborId, reqId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesNeighbor(BlockState neighborState, ResourceLocation neighborId, String reqId) {
+        if (reqId == null || reqId.isEmpty()) return false;
+
+        if (reqId.startsWith("#")) {
+            ResourceLocation tagRl = ResourceLocation.tryParse(reqId.substring(1));
+            if (tagRl != null) {
+                TagKey<Block> tagKey = TagKey.create(Registries.BLOCK, tagRl);
+                return neighborState.is(tagKey);
+            }
+            return false;
+        }
+
+        if (neighborId.toString().equals(reqId)) {
+            return true;
+        }
+
+        if (reqId.contains("*")) {
+            if (reqId.endsWith(":*")) {
+                String namespace = reqId.split(":")[0];
+                return neighborId.getNamespace().equals(namespace);
+            } else {
+                String regex = reqId.replace("*", ".*");
+                return neighborId.toString().matches(regex);
+            }
+        }
+
+        return false;
     }
 }

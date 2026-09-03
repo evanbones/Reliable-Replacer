@@ -59,9 +59,16 @@ Use the `additional_blocks` field to place or remove secondary blocks at specifi
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `biomes` | List\<String\> | List of biome IDs where this rule applies. |
-| `dimensions` | List\<String\> | List of dimension IDs (e.g., `minecraft:overworld`). |
-| `structures` | List\<String\> | List of structure IDs. The rule only runs if the block is inside one of these structures. |
+| `biomes` / `biome` | List\<String\> / String | List or single ID of biomes where this rule applies. |
+| `dimensions` / `dimension` | List\<String\> / String | List or single ID of dimensions (e.g., `minecraft:overworld`). |
+| `structures` / `structure` | List\<String\> / String | List or single ID of structures. The rule only runs if the block is inside one of these structures. |
+| `features` / `feature` | List\<String\> / String | List or single ID of worldgen feature IDs, tags, or tree types (e.g., `minecraft:oak`, `minecraft:ore_diamond_buried`, `#c:ores`). Only applies during initial world generation. |
+| `structure_radius` | Integer | Optional block radius around structure bounding boxes / pieces (Default `0`). |
+| `biome_radius` | Integer | Optional block radius around matching biomes (Default `0`). |
+| `feature_radius` | Integer | Optional block radius around feature origin / placement bounds (Default `0`). |
+| `radius` | Integer | General fallback block radius for structures, biomes, and features if specific radius is omitted. |
+
+**Note:** Large radius checks can have a hit on worldgen performance.
 
 ### Coordinates
 Coordinate fields accept simple numbers or relative text.
@@ -104,18 +111,27 @@ Use the `state_properties` field to only replace blocks that match specific stat
 
 ### Neighbor Filters
 
-Use the `neighbors` field to only replace blocks if their neighbors match specific block IDs.
+Use the `neighbors` field to only replace blocks if their neighbors match specific block conditions.
 
 ```json
 "neighbors": {
   "up": "minecraft:air",
-  "down": "minecraft:grass_block"
+  "sides": ["#minecraft:logs", "minecraft:stone"],
+  "down": "#minecraft:dirt"
 }
-
 ```
 
-* **Keys:** Directions (`up`, `down`, `north`, `south`, `east`, `west`).
-* **Values:** Block ID to check for. Supports wildcards (`modid:*`).
+* **Keys (Directions & Direction Keywords):**
+  * **Specific Directions:** `up` (or `top`), `down` (or `bottom`), `north`, `south`, `east`, `west`.
+  * `any`: Matches if **at least one** of the 6 neighboring blocks satisfies the condition.
+  * `all`: Matches only if **all 6** neighboring blocks satisfy the condition.
+  * `sides` or `horizontal`: Matches if **at least one** horizontal neighbor (north, south, east, west) satisfies the condition.
+  * `all_sides` or `all_horizontal`: Matches only if **all 4** horizontal neighbors satisfy the condition.
+* **Values (Block Matching):**
+  * **Single Block ID:** `"minecraft:air"`
+  * **Block List / Array:** `["minecraft:air", "minecraft:cave_air"]` (matches if neighbor is any block in the list)
+  * **Block Tags:** Prefix with `#` (e.g., `"#minecraft:logs"`, `"#c:stones"`)
+  * **Wildcards & Patterns:** Supports wildcard namespaces (e.g., `"modid:*"` or regex pattern matching).
 
 ### State Retention
 

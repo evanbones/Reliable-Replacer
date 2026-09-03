@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-09-02
+
+### Added
+
+- Added `radius`, `biome_radius`, `feature_radius` and `structure_radius` for filters.
+- Added `feature` to filter replacements by placed feature type.
+- Neighboring block checks now support block arrays, tags (`#tag`), and wildcards.
+- Support for direction keywords in neighbor checks (`any`, `all`, `sides`/`horizontal`, `all_sides`/`all_horizontal`).
+- Added config option to globally disable retrogen.
+
+### Changed
+
+- Improved rule parsing to be more forgiving with key names.
+- Improve structure filtering.
+- Code cleanups.
+
+### Fixed
+
+- Fixed `structures` filters being ignored for blocks placed during world generation.
+- Fixed structure filters matching the whole structure bounding box on live placement instead of its individual pieces.
+- Fixed issues with retrogen (thanks, @tazer!).
+- Performance improvements.
+
 ## [1.5.7] - 2026-06-28
 
 ### Fixed

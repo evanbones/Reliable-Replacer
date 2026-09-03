@@ -1,7 +1,7 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
-import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.api.IProcessedChunk;
+import com.evandev.reliable_replacer.config.ModConfig;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -52,6 +52,7 @@ public class ChunkSerializerMixin {
 
             if (processedChunk.reliableReplacer$hasBeenProcessed()) {
                 tag.putBoolean("ReliableReplacerProcessed", true);
+                tag.putInt("ReliableReplacerRulesHash", processedChunk.reliableReplacer$getRulesHash());
             }
             if (processedChunk.reliableReplacer$isDirty()) {
                 tag.putBoolean("ReliableReplacerDirty", true);
@@ -66,6 +67,9 @@ public class ChunkSerializerMixin {
         if (chunk instanceof IProcessedChunk processedChunk) {
             if (tag.contains("ReliableReplacerProcessed") && tag.getBoolean("ReliableReplacerProcessed")) {
                 processedChunk.reliableReplacer$markProcessed();
+                if (tag.contains("ReliableReplacerRulesHash")) {
+                    processedChunk.reliableReplacer$setRulesHash(tag.getInt("ReliableReplacerRulesHash"));
+                }
             }
 
             if (tag.contains("ReliableReplacerDirty") && tag.getBoolean("ReliableReplacerDirty")) {

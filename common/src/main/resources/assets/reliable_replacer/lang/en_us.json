@@ -5,6 +5,9 @@
   "config.reliable_replacer.option.enabled.tooltip": "Bulk toggle for enabling/disabling the mod's features",
   "config.reliable_replacer.option.enabled": "Enable Replacement",
 
+  "config.reliable_replacer.option.enable_retrogen": "Enable Retrogen",
+  "config.reliable_replacer.option.enable_retrogen.tooltip": "Globally toggle retro-generation",
+
   "config.reliable_replacer.option.missing_id_map": "Missing Block ID Map",
   "config.reliable_replacer.option.missing_id_map.tooltip": "Fix broken worlds by mapping missing IDs to valid ones. Format: old_mod:block=minecraft:stone"
 }

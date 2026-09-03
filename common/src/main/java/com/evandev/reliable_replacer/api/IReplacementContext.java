@@ -40,11 +40,25 @@ public interface IReplacementContext {
     CompoundTag getBlockEntityNbt(BlockPos pos);
 
     /**
+     * Checks if the current position matches one of the biomes defined by the rule.
+     *
+     * @param rule The rule containing the biome list and optional biome_radius.
+     */
+    boolean matchesBiome(ReplacementRule rule);
+
+    /**
      * Checks if the current position is inside one of the structures defined by the rule.
      *
      * @param rule The rule containing the structure list (used for caching keys).
      */
     boolean matchesStructure(ReplacementRule rule);
+
+    /**
+     * Checks if the current position is within one of the features defined by the rule.
+     *
+     * @param rule The rule containing the feature list.
+     */
+    boolean matchesFeature(ReplacementRule rule);
 
     /**
      * @return True if this is running during retrogen/worldgen, False if player placed.

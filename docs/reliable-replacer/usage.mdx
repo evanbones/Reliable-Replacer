@@ -13,6 +13,11 @@ The mod watches the `./config/reliable_replacer/` folder in your instance.
 ### Global Configuration
 Global settings are found in `config/reliable_replacer.json` or via the **Cloth Config** menu in-game.
 
+Available options:
+* `"enabled"` (Boolean, default `true`): Master switch for the mod's features.
+* `"enable_retrogen"` (Boolean, default `true`): Global switch to toggle retro-generation block scanning on loaded chunks. When `false` (or when no active rules have retrogen enabled), retrogen chunk scans are skipped completely.
+* `"missing_id_map"` (Object): Remap missing block IDs when loading chunks or structure templates.
+
 ### JSON Structure
 A rule file can contain a single rule object or an array of rule objects.
 

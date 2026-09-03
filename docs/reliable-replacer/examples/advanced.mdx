@@ -101,6 +101,20 @@ Replaces Coarse Dirt with Grass Block, but only if there is Air directly above i
 
 ```
 
+You can also use direction keywords (`sides`, `any`, `all`), block tags (`#tag`), and lists of blocks:
+
+```json
+{
+  "inputs": ["minecraft:stone"],
+  "output": "minecraft:mossy_cobblestone",
+  "neighbors": {
+    "sides": ["#minecraft:logs", "minecraft:water"],
+    "any": "minecraft:mossy_cobblestone"
+  }
+}
+
+```
+
 ### Block State Filtering
 
 Replaces only the top half of tall flowers (like Sunflowers) with Air, effectively removing them, while leaving the bottom half (or other flowers) alone.

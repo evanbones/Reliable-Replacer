@@ -1,6 +1,7 @@
 package com.evandev.reliable_replacer.data;
 
 import com.evandev.reliable_replacer.Constants;
+import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -14,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 public class ReplacementRule {
     public Set<String> inputs = new HashSet<>();
@@ -35,6 +37,25 @@ public class ReplacementRule {
     public Set<String> biomes = new HashSet<>();
     public Set<String> dimensions = new HashSet<>();
     public Set<String> structures = new HashSet<>();
+    public Set<String> features = new HashSet<>();
+
+    public String biome;
+    public String dimension;
+    public String structure;
+    public String feature;
+
+    @SerializedName("structure_radius")
+    public Integer structureRadius;
+
+    @SerializedName("biome_radius")
+    public Integer biomeRadius;
+
+    @SerializedName("feature_radius")
+    public Integer featureRadius;
+
+    @SerializedName("radius")
+    public Integer radius;
+
     public transient CompoundTag parsedInputNbt;
 
     @SerializedName("min_x")
@@ -71,7 +92,8 @@ public class ReplacementRule {
     public List<String> randomizeProperties = new ArrayList<>();
 
     @SerializedName("neighbors")
-    public Map<String, String> neighbors = new HashMap<>();
+    @JsonAdapter(NeighborsAdapter.class)
+    public Map<String, List<String>> neighbors = new HashMap<>();
     @SerializedName("probability")
     public Float probability = null;
     @SerializedName("remove")
@@ -87,6 +109,8 @@ public class ReplacementRule {
     public transient Set<ResourceLocation> parsedBiomes;
     public transient Set<ResourceLocation> parsedDimensions;
     public transient Set<ResourceLocation> parsedStructures;
+    public transient Set<ResourceLocation> parsedFeatures;
+    public transient Map<String, Pattern> compiledFeaturePatterns;
     public transient CompoundTag parsedOutputNbt;
     private transient List<Block> outputBlocks;
     private transient Set<Block> inputBlocks;
@@ -168,21 +192,38 @@ public class ReplacementRule {
         }
 
         parsedBiomes = new HashSet<>();
+        if (biome != null && !biome.trim().isEmpty()) biomes.add(biome);
         if (biomes != null) biomes.forEach(s -> {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedBiomes.add(rl);
         });
 
         parsedDimensions = new HashSet<>();
+        if (dimension != null && !dimension.trim().isEmpty()) dimensions.add(dimension);
         if (dimensions != null) dimensions.forEach(s -> {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedDimensions.add(rl);
         });
 
         parsedStructures = new HashSet<>();
+        if (structure != null && !structure.trim().isEmpty()) structures.add(structure);
         if (structures != null) structures.forEach(s -> {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedStructures.add(rl);
+        });
+
+        parsedFeatures = new HashSet<>();
+        compiledFeaturePatterns = new HashMap<>();
+        if (feature != null && !feature.trim().isEmpty()) features.add(feature);
+        if (features != null) features.forEach(s -> {
+            if (s == null || s.isEmpty()) return;
+            if (s.contains("*") && !s.startsWith("#")) {
+                compiledFeaturePatterns.put(s, Pattern.compile(s.replace("*", ".*")));
+                return;
+            }
+            String clean = s.startsWith("#") ? s.substring(1) : s;
+            ResourceLocation rl = ResourceLocation.tryParse(clean);
+            if (rl != null) parsedFeatures.add(rl);
         });
 
         if (outputNbt != null && !outputNbt.trim().isEmpty()) {
@@ -232,12 +273,30 @@ public class ReplacementRule {
 
     public boolean shouldRunRetrogen() {
         if (retrogen != null) return retrogen;
-        return biomes.isEmpty() && structures.isEmpty();
+        return biomes.isEmpty() && structures.isEmpty() && features.isEmpty();
     }
 
     public boolean shouldRunPlayerBlocks() {
         if (playerBlocks != null) return playerBlocks;
-        return biomes.isEmpty() && structures.isEmpty();
+        return biomes.isEmpty() && structures.isEmpty() && features.isEmpty();
+    }
+
+    public int getStructureRadius() {
+        if (structureRadius != null) return Math.max(0, structureRadius);
+        if (radius != null) return Math.max(0, radius);
+        return 0;
+    }
+
+    public int getBiomeRadius() {
+        if (biomeRadius != null) return Math.max(0, biomeRadius);
+        if (radius != null) return Math.max(0, radius);
+        return 0;
+    }
+
+    public int getFeatureRadius() {
+        if (featureRadius != null) return Math.max(0, featureRadius);
+        if (radius != null) return Math.max(0, radius);
+        return 0;
     }
 
     private void parseToCache(String val, Consumer<Integer> absSetter, Consumer<Integer> offsetSetter) {

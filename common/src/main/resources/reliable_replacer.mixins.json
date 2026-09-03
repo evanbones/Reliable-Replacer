@@ -13,9 +13,11 @@
     "minecraft.FeatureMixin",
     "minecraft.LevelMixin",
     "minecraft.MinecraftServerMixin",
+    "minecraft.PlacedFeatureMixin",
     "minecraft.RandomizableContainerBlockEntityMixin",
     "minecraft.ServerLevelMixin",
     "minecraft.StructureTemplateMixin",
+    "minecraft.WorldGenRegionAccessor",
     "minecraft.WorldGenRegionMixin"
   ],
   "client": [],

@@ -32,6 +32,12 @@ public class ClothConfigIntegration {
                 .setSaveConsumer(newValue -> config.enabled = newValue)
                 .build());
 
+        general.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.reliable_replacer.option.enable_retrogen"), config.enableRetrogen)
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.reliable_replacer.option.enable_retrogen.tooltip"))
+                .setSaveConsumer(newValue -> config.enableRetrogen = newValue)
+                .build());
+
         List<String> currentMapAsList = new ArrayList<>();
         if (config.missingIdMap != null) {
             config.missingIdMap.forEach((k, v) -> currentMapAsList.add(k + "=" + v));
