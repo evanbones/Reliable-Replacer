@@ -279,7 +279,7 @@ public class LiveReplacementContext implements IReplacementContext {
                     if (structure == null) continue;
 
                     if (radius <= 0) {
-                        if (structureManager.getStructureAt(pos, structure).isValid()) {
+                        if (structureManager.getStructureWithPieceAt(pos, structure).isValid()) {
                             return true;
                         }
                     } else {
