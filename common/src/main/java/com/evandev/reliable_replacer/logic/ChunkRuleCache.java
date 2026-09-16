@@ -22,6 +22,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
+import net.minecraft.world.level.levelgen.structure.structures.DesertPyramidPiece;
+import net.minecraft.world.level.levelgen.structure.structures.JungleTemplePiece;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,11 +70,22 @@ public class ChunkRuleCache {
         return (long) dx * dx + (long) dy * dy + (long) dz * dz;
     }
 
+    // this is effectively a hack
+    public static BoundingBox getEffectiveBoundingBox(StructurePiece piece) {
+        BoundingBox box = piece.getBoundingBox();
+        if (piece instanceof DesertPyramidPiece) {
+            return new BoundingBox(box.minX(), box.minY() - 14, box.minZ(), box.maxX(), box.maxY(), box.maxZ());
+        } else if (piece instanceof JungleTemplePiece) {
+            return new BoundingBox(box.minX(), box.minY() - 4, box.minZ(), box.maxX(), box.maxY(), box.maxZ());
+        }
+        return box;
+    }
+
     private static void addStart(StructureStart start, Set<StructureStart> visitedStarts, List<BoundingBox> boxes) {
         if (start == null || !start.isValid() || !visitedStarts.add(start)) return;
 
         for (StructurePiece piece : start.getPieces()) {
-            boxes.add(piece.getBoundingBox());
+            boxes.add(getEffectiveBoundingBox(piece));
         }
         if (start.getPieces().isEmpty()) {
             boxes.add(start.getBoundingBox());

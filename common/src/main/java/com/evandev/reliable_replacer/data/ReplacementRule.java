@@ -18,8 +18,14 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class ReplacementRule {
+    @SerializedName(value = "inputs", alternate = {"input"})
+    @JsonAdapter(StringOrSetAdapter.class)
     public Set<String> inputs = new HashSet<>();
-    public String output;
+
+    public transient String output;
+
+    @SerializedName(value = "outputs", alternate = {"output"})
+    @JsonAdapter(StringOrListAdapter.class)
     public List<String> outputs = new ArrayList<>();
 
     @SerializedName("output_nbt")
@@ -34,15 +40,21 @@ public class ReplacementRule {
     @SerializedName("item_replacements")
     public List<ItemReplacement> itemReplacements = new ArrayList<>();
 
+    @SerializedName(value = "biomes", alternate = {"biome"})
+    @JsonAdapter(StringOrSetAdapter.class)
     public Set<String> biomes = new HashSet<>();
-    public Set<String> dimensions = new HashSet<>();
-    public Set<String> structures = new HashSet<>();
-    public Set<String> features = new HashSet<>();
 
-    public String biome;
-    public String dimension;
-    public String structure;
-    public String feature;
+    @SerializedName(value = "dimensions", alternate = {"dimension"})
+    @JsonAdapter(StringOrSetAdapter.class)
+    public Set<String> dimensions = new HashSet<>();
+
+    @SerializedName(value = "structures", alternate = {"structure"})
+    @JsonAdapter(StringOrSetAdapter.class)
+    public Set<String> structures = new HashSet<>();
+
+    @SerializedName(value = "features", alternate = {"feature"})
+    @JsonAdapter(StringOrSetAdapter.class)
+    public Set<String> features = new HashSet<>();
 
     @SerializedName("structure_radius")
     public Integer structureRadius;
@@ -192,21 +204,18 @@ public class ReplacementRule {
         }
 
         parsedBiomes = new HashSet<>();
-        if (biome != null && !biome.trim().isEmpty()) biomes.add(biome);
         if (biomes != null) biomes.forEach(s -> {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedBiomes.add(rl);
         });
 
         parsedDimensions = new HashSet<>();
-        if (dimension != null && !dimension.trim().isEmpty()) dimensions.add(dimension);
         if (dimensions != null) dimensions.forEach(s -> {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedDimensions.add(rl);
         });
 
         parsedStructures = new HashSet<>();
-        if (structure != null && !structure.trim().isEmpty()) structures.add(structure);
         if (structures != null) structures.forEach(s -> {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl != null) parsedStructures.add(rl);
@@ -214,7 +223,6 @@ public class ReplacementRule {
 
         parsedFeatures = new HashSet<>();
         compiledFeaturePatterns = new HashMap<>();
-        if (feature != null && !feature.trim().isEmpty()) features.add(feature);
         if (features != null) features.forEach(s -> {
             if (s == null || s.isEmpty()) return;
             if (s.contains("*") && !s.startsWith("#")) {

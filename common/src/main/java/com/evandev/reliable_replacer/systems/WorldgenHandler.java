@@ -26,6 +26,7 @@ public class WorldgenHandler {
         IProcessedChunk access = (IProcessedChunk) chunk;
         if (access.reliableReplacer$hasBeenProcessed()) return;
         access.reliableReplacer$markProcessed();
+        access.reliableReplacer$setRulesHash(RuleManager.RETROGEN_RULES_HASH);
 
         ChunkPos chunkPos = chunk.getPos();
         LevelData levelData = levelAccessor.getLevelData();

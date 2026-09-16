@@ -282,6 +282,15 @@ public class LiveReplacementContext implements IReplacementContext {
                         if (structureManager.getStructureWithPieceAt(pos, structure).isValid()) {
                             return true;
                         }
+                        for (StructureStart start : structureManager.startsForStructure(SectionPos.of(pos), structure)) {
+                            if (start.isValid()) {
+                                for (StructurePiece piece : start.getPieces()) {
+                                    if (ChunkRuleCache.getEffectiveBoundingBox(piece).isInside(pos)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
                     } else {
                         ChunkPos currentChunk = new ChunkPos(pos);
                         int chunkRadius = (int) Math.ceil(radius / 16.0);
@@ -297,7 +306,7 @@ public class LiveReplacementContext implements IReplacementContext {
                                 for (StructureStart start : structureManager.startsForStructure(secPos, structure)) {
                                     if (start.isValid()) {
                                         for (StructurePiece piece : start.getPieces()) {
-                                            if (ChunkRuleCache.distanceSqToBox(pos, piece.getBoundingBox()) <= radiusSq) {
+                                            if (ChunkRuleCache.distanceSqToBox(pos, ChunkRuleCache.getEffectiveBoundingBox(piece)) <= radiusSq) {
                                                 return true;
                                             }
                                         }

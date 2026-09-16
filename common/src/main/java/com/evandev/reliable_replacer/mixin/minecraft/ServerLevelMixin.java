@@ -1,6 +1,7 @@
 package com.evandev.reliable_replacer.mixin.minecraft;
 
 import com.evandev.reliable_replacer.api.IProcessedChunk;
+import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.systems.RetrogenHandler;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -16,7 +17,7 @@ public class ServerLevelMixin {
     @Inject(method = "startTickingChunk", at = @At("RETURN"))
     private void reliableReplacer$onStartTicking(LevelChunk chunk, CallbackInfo ci) {
         IProcessedChunk access = (IProcessedChunk) chunk;
-        if (!access.reliableReplacer$hasBeenProcessed() || access.reliableReplacer$isDirty()) {
+        if (!access.reliableReplacer$hasBeenProcessed() || access.reliableReplacer$isDirty() || access.reliableReplacer$getRulesHash() != RuleManager.RETROGEN_RULES_HASH) {
             RetrogenHandler.processChunk(chunk);
         }
     }
