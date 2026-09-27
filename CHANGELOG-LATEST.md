@@ -1,4 +1,2 @@
-### Changed
-
-- Tweaked default structure bounding boxes for jungle temples and desert pyramids.
-- JSON rule parsing is now much more lenient.
+- Ported to 26.3.
+- 26.x is now up to date with the 1.21.1 version.

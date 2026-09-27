@@ -1,0 +1,29 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.evandev.reliable_replacer.mixin",
+  "plugin": "com.moulberry.mixinconstraints.ConstraintsMixinPlugin",
+  "compatibilityLevel": "JAVA_${java_version}",
+  "mixins": [
+    "minecraft.BlockItemMixin",
+    "minecraft.ChunkAccessMixin",
+    "minecraft.ChunkGeneratorMixin",
+    "minecraft.ChunkMapAccessor",
+    "minecraft.ChunkSerializerMixin",
+    "minecraft.FeatureMixin",
+    "minecraft.FeaturePlacerMixin",
+    "minecraft.LevelMixin",
+    "minecraft.MinecraftServerMixin",
+    "minecraft.PlacedFeatureMixin",
+    "minecraft.SerializableChunkDataMixin",
+    "minecraft.ServerLevelMixin",
+    "minecraft.StructureTemplateMixin",
+    "minecraft.WorldGenRegionAccessor",
+    "minecraft.WorldGenRegionMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
