@@ -14,6 +14,7 @@ import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,9 +22,11 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 public class BlockUtil {
 
@@ -34,10 +37,14 @@ public class BlockUtil {
 
         LevelChunkSection[] sections = chunk.getSections();
         boolean processAir = RuleManager.HAS_AIR_RULES;
+        Map<Block, ?> rules = RuleManager.RULES_BY_BLOCK;
+        if (rules.isEmpty()) return;
+        Predicate<BlockState> hasRule = state -> rules.containsKey(state.getBlock());
 
         for (int i = 0; i < sections.length; i++) {
             LevelChunkSection section = sections[i];
             if (section == null || (section.hasOnlyAir() && !processAir)) continue;
+            if (!section.maybeHas(hasRule)) continue;
 
             int bottomY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
 
@@ -45,7 +52,7 @@ public class BlockUtil {
                 for (int z = 0; z < 16; z++) {
                     for (int x = 0; x < 16; x++) {
                         BlockState original = section.getBlockState(x, y, z);
-                        if (original.isAir() && !processAir) continue;
+                        if (!rules.containsKey(original.getBlock())) continue;
 
                         mutablePos.set(chunkStartX + x, bottomY + y, chunkStartZ + z);
                         action.accept(mutablePos, original);
