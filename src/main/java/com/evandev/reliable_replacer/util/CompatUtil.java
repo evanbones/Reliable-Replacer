@@ -11,10 +11,14 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.storage.LevelData;
 import org.jetbrains.annotations.Nullable;
@@ -151,6 +155,19 @@ public final class CompatUtil {
         try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {
             blockEntity.loadCustomOnly(TagValueInput.create(reporter, registries, tag));
         }
+        //?}
+    }
+
+    public static void updatePoi(LevelAccessor level, BlockPos pos, BlockState oldState, BlockState newState) {
+        ServerLevel serverLevel;
+        if (level instanceof ServerLevel sl) serverLevel = sl;
+        else if (level instanceof WorldGenRegion wgr) serverLevel = wgr.getLevel();
+        else return;
+
+        //? if <1.21.2 {
+        /*serverLevel.onBlockStateChange(pos, oldState, newState);
+        *///?} else {
+        serverLevel.updatePOIOnBlockStateChange(pos, oldState, newState);
         //?}
     }
 }

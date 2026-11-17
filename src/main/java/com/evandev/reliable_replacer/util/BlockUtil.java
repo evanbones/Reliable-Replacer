@@ -225,6 +225,8 @@ public class BlockUtil {
                 currentChunk.setBlockState(pos, state);
                 //?}
 
+                CompatUtil.updatePoi(level, pos, currentState, state);
+
                 if (state.hasBlockEntity() && state.getBlock() instanceof EntityBlock entityBlock) {
                     BlockEntity newBe = entityBlock.newBlockEntity(pos, state);
                     if (newBe != null) {
