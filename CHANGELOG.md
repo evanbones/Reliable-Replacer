@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-11-16
+
+### Fixed
+
+- Additional blocks are no longer overwritten by the rest of a multi-block placement, e.g. the top half of a double
+  plant in newly generated chunks.
+- Villagers can now claim workstations (and other POI blocks) that were placed by a replacement during world generation.
+
 ## [1.7.1] - 2026-09-02
 
 ### Added
