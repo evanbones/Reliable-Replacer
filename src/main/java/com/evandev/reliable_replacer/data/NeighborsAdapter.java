@@ -38,7 +38,7 @@ public class NeighborsAdapter implements JsonDeserializer<Map<String, List<Strin
                 List<String> list = entry.getValue();
                 if (list != null && !list.isEmpty()) {
                     if (list.size() == 1) {
-                        obj.addProperty(entry.getKey(), list.getFirst());
+                        obj.addProperty(entry.getKey(), list.get(0));
                     } else {
                         JsonArray arr = new JsonArray();
                         for (String s : list) {

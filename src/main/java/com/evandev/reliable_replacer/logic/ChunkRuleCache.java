@@ -16,9 +16,13 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
+//? if >=1.21 {
 import net.minecraft.world.level.chunk.status.ChunkDependencies;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.status.ChunkStep;
+//?} else {
+/*import net.minecraft.world.level.chunk.ChunkStatus;
+*///?}
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -121,10 +125,14 @@ public class ChunkRuleCache {
         if (level == null) {
             return false;
         } else if (level instanceof WorldGenRegion wgr) {
+            //? if >=1.21 {
             ChunkStep step = ((WorldGenRegionAccessor) wgr).reliableReplacer$getGeneratingStep();
             ChunkDependencies dependencies = step.directDependencies();
             int distance = wgr.getCenter().getChessboardDistance(cx, cz);
             return distance < dependencies.size() && status.isOrBefore(dependencies.get(distance));
+            //?} else {
+            /*return wgr.hasChunk(cx, cz) && wgr.getChunk(cx, cz, status, false) != null;
+            *///?}
         } else if (level instanceof ServerLevel sl) {
             return sl.getChunkSource().hasChunk(cx, cz);
         }

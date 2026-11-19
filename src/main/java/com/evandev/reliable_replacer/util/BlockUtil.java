@@ -147,7 +147,7 @@ public class BlockUtil {
 
         BlockEntity be = level.getBlockEntity(pos);
         if (keepNbt && be != null) {
-            nbtData = be.saveWithoutMetadata(level.registryAccess());
+            nbtData = CompatUtil.saveBlockEntity(be, level.registryAccess());
             if (stateChanged) {
                 if (be instanceof Clearable clearable) clearable.clearContent();
             }
@@ -163,7 +163,7 @@ public class BlockUtil {
         if (success && (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty()))) {
             BlockEntity newBlockEntity = level.getBlockEntity(pos);
             if (newBlockEntity != null) {
-                CompoundTag finalNbt = newBlockEntity.saveWithoutMetadata(level.registryAccess());
+                CompoundTag finalNbt = CompatUtil.saveBlockEntity(newBlockEntity, level.registryAccess());
 
                 if (nbtData != null) {
                     nbtData.remove("id");
@@ -203,12 +203,12 @@ public class BlockUtil {
         if (keepNbt) {
             BlockEntity oldBe = currentChunk.getBlockEntity(pos);
             if (oldBe != null) {
-                nbtData = oldBe.saveWithoutMetadata(level.registryAccess());
+                nbtData = CompatUtil.saveBlockEntity(oldBe, level.registryAccess());
                 if (stateChanged) {
                     if (oldBe instanceof Clearable clearable) clearable.clearContent();
                 }
             } else {
-                CompoundTag deferredNbt = currentChunk.getBlockEntityNbtForSaving(pos, level.registryAccess());
+                CompoundTag deferredNbt = CompatUtil.blockEntityNbtForSaving(currentChunk, pos, level.registryAccess());
                 if (deferredNbt != null) {
                     nbtData = deferredNbt.copy();
                 }
@@ -239,7 +239,7 @@ public class BlockUtil {
                 BlockEntity be = currentChunk.getBlockEntity(pos);
                 CompoundTag finalNbt = new CompoundTag();
                 if (be != null) {
-                    finalNbt = be.saveWithoutMetadata(level.registryAccess());
+                    finalNbt = CompatUtil.saveBlockEntity(be, level.registryAccess());
                 }
 
                 if (nbtData != null) {
@@ -280,7 +280,7 @@ public class BlockUtil {
                 if (nbtData != null || customNbt != null || (itemReplacements != null && !itemReplacements.isEmpty())) {
                     BlockEntity be = level.getBlockEntity(pos);
                     if (be != null) {
-                        CompoundTag finalNbt = be.saveWithoutMetadata(level.registryAccess());
+                        CompoundTag finalNbt = CompatUtil.saveBlockEntity(be, level.registryAccess());
                         if (nbtData != null) {
                             nbtData.remove("id");
                             nbtData.remove("x");

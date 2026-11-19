@@ -22,7 +22,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+//? if >=1.21 {
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+//?} else {
+/*import net.minecraft.world.level.chunk.ChunkStatus;
+*///?}
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -124,8 +128,8 @@ public class LiveReplacementContext implements IReplacementContext {
     public CompoundTag getBlockEntityNbt(BlockPos targetPos) {
         if (chunk != null) {
             BlockEntity be = chunk.getBlockEntity(targetPos);
-            if (be != null) return be.saveWithoutMetadata(level.registryAccess());
-            return chunk.getBlockEntityNbtForSaving(targetPos, level.registryAccess());
+            if (be != null) return CompatUtil.saveBlockEntity(be, level.registryAccess());
+            return CompatUtil.blockEntityNbtForSaving(chunk, targetPos, level.registryAccess());
         } else {
             int cx = targetPos.getX() >> 4;
             int cz = targetPos.getZ() >> 4;
@@ -134,7 +138,7 @@ public class LiveReplacementContext implements IReplacementContext {
             }
 
             BlockEntity be = level.getBlockEntity(targetPos);
-            if (be != null) return be.saveWithoutMetadata(level.registryAccess());
+            if (be != null) return CompatUtil.saveBlockEntity(be, level.registryAccess());
             return null;
         }
     }

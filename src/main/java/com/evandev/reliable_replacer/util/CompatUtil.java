@@ -125,7 +125,9 @@ public final class CompatUtil {
     }
 
     public static BlockPos spawnPos(LevelData levelData) {
-        //? if <1.21.2 {
+        //? if <1.21 {
+        /*return new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
+        *///?} else if <1.21.2 {
         /*return new BlockPos(levelData.getSpawnPos());
         *///?} else {
         return levelData.getRespawnData().pos();
@@ -148,8 +150,27 @@ public final class CompatUtil {
         //?}
     }
 
+    public static CompoundTag saveBlockEntity(BlockEntity blockEntity, HolderLookup.Provider registries) {
+        //? if <1.21 {
+        /*return blockEntity.saveWithoutMetadata();
+        *///?} else {
+        return blockEntity.saveWithoutMetadata(registries);
+        //?}
+    }
+
+    @Nullable
+    public static CompoundTag blockEntityNbtForSaving(ChunkAccess chunk, BlockPos pos, HolderLookup.Provider registries) {
+        //? if <1.21 {
+        /*return chunk.getBlockEntityNbtForSaving(pos);
+        *///?} else {
+        return chunk.getBlockEntityNbtForSaving(pos, registries);
+        //?}
+    }
+
     public static void loadBlockEntity(BlockEntity blockEntity, CompoundTag tag, HolderLookup.Provider registries) {
-        //? if <1.21.2 {
+        //? if <1.21 {
+        /*blockEntity.load(tag);
+        *///?} else if <1.21.2 {
         /*blockEntity.loadWithComponents(tag, registries);
         *///?} else {
         try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(Constants.LOG)) {

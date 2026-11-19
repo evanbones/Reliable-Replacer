@@ -41,7 +41,11 @@ public class WorldGenRegionMixin {
     @Unique
     private boolean reliableReplacer$canWrite(WorldGenRegion region, BlockPos target) {
         WorldGenRegionAccessor accessor = (WorldGenRegionAccessor) region;
+        //? if >=1.21 {
         int writeRadius = accessor.reliableReplacer$getGeneratingStep().blockStateWriteRadius();
+        //?} else {
+        /*int writeRadius = accessor.reliableReplacer$getWriteRadiusCutoff();
+        *///?}
         ChunkPos center = region.getCenter();
 
         if (Math.abs(CompatUtil.chunkX(center) - SectionPos.blockToSectionCoord(target.getX())) > writeRadius

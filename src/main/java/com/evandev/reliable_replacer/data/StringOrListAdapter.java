@@ -28,7 +28,7 @@ public class StringOrListAdapter implements JsonDeserializer<List<String>>, Json
     public JsonElement serialize(List<String> src, Type typeOfSrc, JsonSerializationContext context) {
         if (src == null || src.isEmpty()) return new JsonArray();
         if (src.size() == 1) {
-            return new JsonPrimitive(src.getFirst());
+            return new JsonPrimitive(src.get(0));
         }
         JsonArray arr = new JsonArray();
         for (String s : src) {

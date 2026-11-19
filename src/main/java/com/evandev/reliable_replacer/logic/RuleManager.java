@@ -71,7 +71,11 @@ public class RuleManager {
     /*private static final ResourceKey<? extends Registry<?>> CONFIGURED_FEATURE_REGISTRY = Registries.FEATURE;
     private static final ResourceKey<? extends Registry<?>> FEATURE_TYPE_REGISTRY = Registries.FEATURE_TYPE;
     *///?}
+    //? if >=1.21 {
     private static final Identifier NO_TRUNK_BLOCK = Identifier.withDefaultNamespace("__no_trunk__");
+    //?} else {
+    /*private static final Identifier NO_TRUNK_BLOCK = new Identifier("__no_trunk__");
+    *///?}
     public static volatile boolean HAS_LIVE_RULES = false;
     public static volatile boolean HAS_AIR_RULES = false;
     public static volatile boolean HAS_RETROGEN_RULES = false;
@@ -450,7 +454,7 @@ public class RuleManager {
 
         boolean needsRandom = outputBlocks.size() > 1 || (rule.randomizeProperties != null && !rule.randomizeProperties.isEmpty());
         Random rand = needsRandom ? new Random(pos.asLong()) : null;
-        Block outputBlock = outputBlocks.size() == 1 ? outputBlocks.getFirst() : outputBlocks.get(rand.nextInt(outputBlocks.size()));
+        Block outputBlock = outputBlocks.size() == 1 ? outputBlocks.get(0) : outputBlocks.get(rand.nextInt(outputBlocks.size()));
 
         BlockState newState = outputBlock.defaultBlockState();
 

@@ -71,7 +71,16 @@ public class StructureTemplateMixin {
         }
     }
 
-    //? if <1.21.2 {
+    //? if <1.21 {
+    /*@ModifyArg(
+            method = "placeInWorld",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/block/entity/BlockEntity;load(Lnet/minecraft/nbt/CompoundTag;)V"
+            ),
+            index = 0
+    )
+    *///?} else if <1.21.2 {
     /*@ModifyArg(
             method = "placeInWorld",
             at = @At(

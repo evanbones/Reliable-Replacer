@@ -16,6 +16,7 @@ tasks.named<ProcessResources>("processResources") {
         this["version"] = prop("mod.version") + "+" + prop("deps.minecraft")
         this["minecraft_version_range"] = prop("mod.mc_dep_forgelike")
         this["mod_id"] = prop("mod.id")
+        this["pack_format"] = prop("mod.pack_format")
         this["mod_name"] = prop("mod.name")
         this["description"] = prop("mod.description")
         this["mod_author"] = prop("mod.author")
@@ -98,7 +99,7 @@ neoForge {
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/*.accesswidener", "**/mods.toml")
+        exclude("**/fabric.mod.json", "**/*.accesswidener", "**/mods.toml", "**/*.fabric.mixins.json", "**/*.forge.mixins.json")
     }
 
     jar {
