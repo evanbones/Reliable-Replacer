@@ -4,6 +4,7 @@ import com.evandev.reliable_replacer.config.ModConfig;
 import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
+import com.evandev.reliable_replacer.util.AdditionalBlockGuard;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -24,6 +25,9 @@ public abstract class LevelMixin {
     @Unique
     private static final ThreadLocal<Boolean> reliableReplacer$isReplacing = ThreadLocal.withInitial(() -> false);
 
+    @Unique
+    private final AdditionalBlockGuard reliableReplacer$additionalBlockGuard = new AdditionalBlockGuard();
+
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z", at = @At("HEAD"), cancellable = true)
     private void onSetBlock(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<Boolean> cir) {
         List<BlockPos> queuedPositions = RuleManager.LIVE_PLACEMENT_QUEUE.get();
@@ -39,6 +43,11 @@ public abstract class LevelMixin {
         Level level = (Level) (Object) this;
         LevelData levelData = level.getLevelData();
         if (levelData == null) return;
+
+        if (reliableReplacer$additionalBlockGuard.shouldSkip(pos, state.getBlock(), level.getGameTime())) {
+            cir.setReturnValue(true);
+            return;
+        }
 
         BlockPos spawnPos;
         try {
@@ -69,6 +78,7 @@ public abstract class LevelMixin {
                             BlockPos addPos = entry.getKey();
                             CompoundTag addNbt = result.additionalNbt().get(addPos);
                             BlockUtil.swapBlockWithNbt(level, addPos, entry.getValue(), false, addNbt, null, flags);
+                            reliableReplacer$additionalBlockGuard.guard(addPos, state.getBlock(), level.getGameTime());
                         }
                         if (replacement.equals(state) && !hasCustomNbt && !hasItemReplacements) success = true;
                     }

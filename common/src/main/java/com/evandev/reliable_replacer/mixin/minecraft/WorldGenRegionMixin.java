@@ -6,6 +6,7 @@ import com.evandev.reliable_replacer.data.ReplacementResult;
 import com.evandev.reliable_replacer.logic.ChunkRuleCache;
 import com.evandev.reliable_replacer.logic.RuleManager;
 import com.evandev.reliable_replacer.logic.impl.LiveReplacementContext;
+import com.evandev.reliable_replacer.util.AdditionalBlockGuard;
 import com.evandev.reliable_replacer.util.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -34,6 +35,9 @@ public class WorldGenRegionMixin {
     private final Map<Long, ChunkRuleCache> reliableReplacer$ruleCaches = new HashMap<>();
 
     @Unique
+    private final AdditionalBlockGuard reliableReplacer$additionalBlockGuard = new AdditionalBlockGuard();
+
+    @Unique
     private boolean reliableReplacer$canWrite(WorldGenRegion region, BlockPos target) {
         WorldGenRegionAccessor accessor = (WorldGenRegionAccessor) region;
         int writeRadius = accessor.reliableReplacer$getWriteRadiusCutoff();
@@ -56,6 +60,11 @@ public class WorldGenRegionMixin {
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z", at = @At("HEAD"), cancellable = true)
     private void reliableReplacer$onWorldGenSetBlock(BlockPos pos, BlockState state, int flags, int recursionLeft, CallbackInfoReturnable<Boolean> cir) {
         if (reliableReplacer$isReplacing.get() || !ModConfig.get().enabled) return;
+
+        if (reliableReplacer$additionalBlockGuard.shouldSkip(pos, state.getBlock(), 0)) {
+            cir.setReturnValue(true);
+            return;
+        }
 
         if (RuleManager.RULES_BY_BLOCK == null || !RuleManager.RULES_BY_BLOCK.containsKey(state.getBlock())) {
             return;
@@ -97,6 +106,7 @@ public class WorldGenRegionMixin {
                                 CompoundTag addNbt = result.additionalNbt().get(addPos);
                                 ChunkAccess addChunk = region.getChunk(addPos.getX() >> 4, addPos.getZ() >> 4);
                                 BlockUtil.safeSetBlock(region, addChunk, addPos, entry.getValue(), false, addNbt, null);
+                                reliableReplacer$additionalBlockGuard.guard(addPos, state.getBlock(), 0);
                             } else {
                                 Constants.LOG.debug("Skipping additional block at {} during world generation: outside the writable chunk radius of {}.",
                                         addPos, region.getCenter());
